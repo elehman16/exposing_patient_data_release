@@ -4,11 +4,13 @@ from typing import Dict, List
 import numpy as np
 import torch
 from experiments.metrics import differential_similarity
-from experiments.utilities import (filter_condition_code_by_count,
-                                   get_condition_code_to_count,
-                                   get_condition_code_to_descriptions,
-                                   get_condition_labels_as_vector,
-                                   get_subject_id_to_patient_info)
+from experiments.utilities import (
+    filter_condition_code_by_count,
+    get_condition_code_to_count,
+    get_condition_code_to_descriptions,
+    get_condition_labels_as_vector,
+    get_subject_id_to_patient_info,
+)
 from tqdm import tqdm
 from transformers import BertModel, BertTokenizerFast
 
@@ -47,35 +49,45 @@ def get_name_condition_similarities(
         )
 
         with torch.no_grad():
-            predictions = model(batch.input_ids.cuda(), attention_mask=batch.attention_mask.cuda())
-            hidden_states = predictions.last_hidden_state  # (B, L, H)
-            name_embeddings = hidden_states[:, name_start_index:name_end_index]  # (B, L_name, H)
-            condition_embeddings = hidden_states[
-                :, condition_start_index:condition_end_index
-            ]  # (B, L_cond, H)
-
-            similarity = cosine_sim(name_embeddings.mean(1), condition_embeddings.mean(1)).cpu().data.numpy()
-            mean_similarities.append(similarity)
-
-            similarity = (
-                cosine_sim(name_embeddings.max(1).values, condition_embeddings.max(1).values)
-                .cpu()
-                .data.numpy()
+            predictions = model(
+                batch.input_ids.cuda(), attention_mask=batch.attention_mask.cuda(), output_hidden_states=True
             )
-            max_similarities.append(similarity)
+            # hidden_states = predictions.last_hidden_state  # (B, L, H)
+            hidden_states = predictions.hidden_states[-2]
+            template_lengths = batch.attention_mask.sum(-1)
 
-            all_pair = torch.bmm(normalize(name_embeddings), normalize(condition_embeddings).transpose(1, 2))
-            similarity = all_pair.max(-1).values.max(-1).values
-            all_pair_similarities.append(similarity.cpu().data.numpy())
+            name_embeddings = hidden_states[:, name_start_index:name_end_index]  # (B, L_name, H)
+
+            condition_embeddings = []  # (B, L_cond, H)
+
+            for i in range(hidden_states.shape[0]):
+                template_hidden_states = hidden_states[i, : template_lengths[i]]
+                condition_embeddings.append(template_hidden_states[condition_start_index:condition_end_index])
+
+            mean_condition_embeddings = torch.cat(
+                [embedding.mean(0)[None, :] for embedding in condition_embeddings], dim=0
+            )  # (B, H)
+            similarity = cosine_sim(name_embeddings.mean(1), mean_condition_embeddings)  # (B, )
+            mean_similarities.append(similarity.cpu().data.numpy())
+
+            max_condition_embeddings = torch.cat(
+                [embedding.max(0).values[None, :] for embedding in condition_embeddings], dim=0
+            )  # (B, H)
+            similarity = cosine_sim(name_embeddings.max(1).values, max_condition_embeddings)
+            max_similarities.append(similarity.cpu().data.numpy())
+
+            for i, embedding in enumerate(condition_embeddings):
+                similarity_matrix = normalize(embedding) @ normalize(name_embeddings[i]).T
+                all_pair_similarities.append(torch.max(similarity_matrix).cpu().data.numpy())
 
     return (
         np.concatenate(mean_similarities, axis=0),
         np.concatenate(max_similarities, axis=0),
-        np.concatenate(all_pair_similarities, axis=0),
+        np.array(all_pair_similarities),
     )
 
 
-def main(model, tokenizer, condition_type):
+def main(model, tokenizer: BertTokenizerFast, condition_type):
     """Compute the BERT representations + cosine similarities.
     @param model is the BERT model.
     @param tokenizer is the BERT tokenizer.
@@ -105,11 +117,25 @@ def main(model, tokenizer, condition_type):
                 generate_template(patient_info.FIRST_NAME, patient_info.LAST_NAME, patient_info.GENDER, desc)
             )
 
-        name_length = len(tokenizer.tokenize(patient_info.FIRST_NAME + " " + patient_info.LAST_NAME))
-        name_start_index = 2
+        name = patient_info.FIRST_NAME + " " + patient_info.LAST_NAME
+        name_length = len(tokenizer.tokenize(name))
+
+        ## Following info may change if we change the template structure.
+        ## Following are on basis of structure [CLS] {title} {name} is a yo patient with {condition} [SEP]
+        example_template = tokenizer.tokenize(templates[0])
+        name_start_index = 2  # Name Starts after [CLS] {title}
         name_end_index = name_start_index + name_length
-        condition_start_index = tokenizer.tokenize(templates[0]).index("with") + 1
+        condition_start_index = example_template.index("patient") + 2
         condition_end_index = -1
+
+        assert (
+            tokenizer.convert_tokens_to_string(example_template[name_start_index:name_end_index])
+            == " ".join(name.lower().split())
+        ), breakpoint()
+        assert (
+            tokenizer.convert_tokens_to_string(example_template[condition_start_index:condition_end_index])
+            == " ".join(condition_code_to_description[set_to_use[0]].lower().split())
+        ), breakpoint()
 
         mean_similarities, max_similarities, all_pair_similarities = get_name_condition_similarities(
             model,
@@ -131,6 +157,8 @@ def main(model, tokenizer, condition_type):
     print(f"SD Mean Pos-Neg {np.std(mean_differential_sim)}")
     print(f"Mean Max Pos-Neg {np.average(max_differential_sim)}")
     print(f"SD Max Pos-Neg {np.std(max_differential_sim)}")
+    print(f"Mean All Pair Pos-Neg {np.average(all_pair_differential_sim)}")
+    print(f"SD All Pair Pos-Neg {np.std(all_pair_differential_sim)}")
 
 
 if __name__ == "__main__":

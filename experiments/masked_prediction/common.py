@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Callable, Dict, List
 
 import numpy as np
 import torch
@@ -33,8 +33,8 @@ def get_logits_from_templates(
     return logits
 
 
-def get_condition_predicted_logit(
-    logits: np.ndarray, condition_wordpiece_ids: List[int], start_index: int
+def get_average_predicted_score(
+    logits: np.ndarray, wordpiece_ids: List[int], start_index: int
 ) -> float:
     """
     Predict the mask tokens in the template given/our standard template.
@@ -44,8 +44,34 @@ def get_condition_predicted_logit(
     """
 
     prediction_value = 0
-    for i, token_index in enumerate(condition_wordpiece_ids):
+    for i, token_index in enumerate(wordpiece_ids):
         wordpiece_logit = logits[start_index + i][token_index]
-        prediction_value += wordpiece_logit / len(condition_wordpiece_ids)
+        prediction_value += wordpiece_logit 
+
+    return float(prediction_value) / len(wordpiece_ids)
+
+def get_average_predicted_rank(
+    logits: np.ndarray, wordpiece_ids: List[int], start_index: int
+) -> float:
+    """
+    Predict the mask tokens in the template given/our standard template.
+    @param condition the condition that we want to inquire if this person has.
+    @param logits: dict mapping condition length to template querying that condition length
+    @return the prediction logit for the condition (average logits of wordpieces in the condition).
+    """
+
+    prediction_value = 0
+    for i, token_index in enumerate(wordpiece_ids):
+        wordpiece_logit = logits[start_index + i][token_index]
+        wordpiece_rank = (logits[start_index +i] > wordpiece_logit).sum()
+        prediction_value += wordpiece_rank / len(wordpiece_ids)
 
     return float(prediction_value)
+
+def get_scoring_function(metric: str) -> Callable[[np.ndarray, List[int], int], float]:
+    if metric in ["logit", "probability"] :
+        return get_average_predicted_score
+    elif metric == "rank" :
+        return get_average_predicted_rank
+    else :
+        raise NotImplementedError(f"{metric} function is not implemented")

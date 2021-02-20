@@ -1,8 +1,7 @@
 import argparse
-from typing import Dict, List
+from typing import Dict
 
 import numpy as np
-import torch
 from experiments.metrics import precision_at_k
 from experiments.utilities import (
     filter_condition_code_by_count,
@@ -19,41 +18,10 @@ from sklearn.utils import resample
 from tqdm import tqdm
 from transformers import BertModel, BertTokenizerFast
 
-
-def generate_condition_only_template(condition_description: str):
-    return f"[CLS] {condition_description.strip()} [SEP]"
+from experiments.probing.common import generate_condition_only_template, generate_name_condition_template, get_cls_embeddings
 
 
-def generate_name_condition_template(
-    first_name: str, last_name: str, gender: str, condition_description: str
-):
-    title = "Mr" if gender == "M" else "Mrs"  # I guess just assume married w/e idk ?
-    return f"[CLS] {title} {first_name} {last_name} is a yo patient with {condition_description} [SEP]"
-
-
-def get_cls_embeddings(model, tokenizer, templates: List[str], disable_tqdm: bool = False) -> np.ndarray:
-    embeddings = []
-    batch_size = 500
-    for b in tqdm(range(0, len(templates), batch_size), disable=disable_tqdm):
-        batch = templates[b : b + batch_size]
-        split_texts = [template.split() for template in batch]
-        batch = tokenizer(
-            text=split_texts,
-            is_split_into_words=True,
-            padding=True,
-            return_tensors="pt",
-            add_special_tokens=False,
-        )
-
-        with torch.no_grad():
-            predictions = model(batch.input_ids.cuda(), attention_mask=batch.attention_mask.cuda())
-            cls_embeddings = predictions.pooler_output.cpu().data.numpy()
-            embeddings.append(cls_embeddings)
-
-    return np.concatenate(embeddings, axis=0)
-
-
-def train_and_evaluate(model, tokenizer, condition_type: str, mode: str, prober: str):
+def run_probe(model: BertModel, tokenizer: BertTokenizerFast, condition_type: str, mode: str, prober: str):
     """Train and evaluate the model trained on the data.
 
     Args:
@@ -173,7 +141,7 @@ def train_and_evaluate(model, tokenizer, condition_type: str, mode: str, prober:
     print("Average AUC: {}".format(np.average(auc_scores)))
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--condition-type", type=str, choices=["icd9", "stanza"])
     parser.add_argument("--model", help="Location of the model", type=str)
@@ -187,15 +155,6 @@ def main():
     parser.add_argument("--prober", type=str, choices=["LR", "MLP"])
     args = parser.parse_args()
 
-    # Load pre-trained model tokenizer (vocabulary)
-    # '/home/eric/dis_rep/nyu_clincalBERT/clinicalBERT/notebook/bert_uncased/'
     tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer)
-
-    # Load pre-trained model (weights)
-    # '/home/eric/dis_rep/nyu_clincalBERT/convert_to_pytorch/all_useful_100k/'
     model = BertModel.from_pretrained(args.model).cuda().eval()
-    train_and_evaluate(model, tokenizer, args.condition_type, args.mode, args.prober)
-
-
-if __name__ == "__main__":
-    main()
+    run_probe(model, tokenizer, args.condition_type, args.mode, args.prober)

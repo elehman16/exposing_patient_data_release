@@ -2,7 +2,7 @@ import random
 import config
 import pandas as pd
 
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set
 
 condition_type_to_file = {"icd9": config.SUBJECT_ID_to_ICD9, "stanza": config.SUBJECT_ID_to_Stanza}
 
@@ -26,20 +26,21 @@ def get_subject_id_to_patient_info(condition_type: str) -> Dict[str, PatientInfo
         condition_type in condition_type_to_file
     ), f"Unknown Condition type, Select From {list(condition_type_to_file.keys())}"
 
-    subject_id_to_icd = pd.read_csv(condition_type_to_file[condition_type])
+    ## Select ICD9 or Stanza on basis of condition_type
+    subject_id_to_condition_codes = pd.read_csv(condition_type_to_file[condition_type])
 
     ## Filter to modified subject ids only
     modified_subject_ids = get_modified_subject_ids_set()
     subject_id_to_names = subject_id_to_names[subject_id_to_names.SUBJECT_ID.isin(modified_subject_ids)]
-    subject_id_to_icd = subject_id_to_icd[subject_id_to_icd.SUBJECT_ID.isin(modified_subject_ids)]
+    subject_id_to_condition_codes = subject_id_to_condition_codes[subject_id_to_condition_codes.SUBJECT_ID.isin(modified_subject_ids)]
 
     ## Convert to subject_id to list of conditions
-    subject_id_to_icd = (
-        subject_id_to_icd.groupby("SUBJECT_ID")["CODE"].apply(lambda x: sorted(list(x.values))).reset_index()
+    subject_id_to_condition_codes = (
+        subject_id_to_condition_codes.groupby("SUBJECT_ID")["CODE"].apply(lambda x: sorted(list(x.values))).reset_index()
     )
 
     ## Merge condition info with demographics
-    subject_id_info = subject_id_to_names.merge(subject_id_to_icd, on="SUBJECT_ID")
+    subject_id_info = subject_id_to_names.merge(subject_id_to_condition_codes, on="SUBJECT_ID")
 
     ## Create dictionary mapping subject id to patient info
     first_names = list(subject_id_info["FIRST_NAME"].values)
@@ -69,8 +70,9 @@ def get_patient_name_to_is_modified() -> Dict[str, int]:
     )
     names: List[str] = list((subject_id_to_name.FIRST_NAME + " " + subject_id_to_name.LAST_NAME).values)
     modified: List[int] = list(subject_id_to_name.MODIFIED.values)
-    labeled_names: Dict[str, int] = dict(zip(names, modified))
 
+    labeled_names: Dict[str, int] = dict(zip(names, modified))
+    
     return labeled_names
 
 ############################################################################################################

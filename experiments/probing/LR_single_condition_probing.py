@@ -3,27 +3,18 @@ from typing import Dict, List, Set
 
 import numpy as np
 from experiments.metrics import precision_at_k
-from experiments.probing.probing_utils import get_cls_embeddings
-from experiments.utilities import (
-    PatientInfo,
-    filter_condition_code_by_count,
-    get_condition_code_to_count,
-    get_condition_code_to_descriptions,
-    get_subject_id_to_patient_info,
-)
-from transformers import BertModel, BertTokenizer
+from experiments.probing.probing_utils import (
+    generate_name_condition_template, get_cls_embeddings)
+from experiments.utilities import (PatientInfo, filter_condition_code_by_count,
+                                   get_condition_code_to_count,
+                                   get_condition_code_to_descriptions,
+                                   get_subject_id_to_patient_info)
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 from tqdm import tqdm
-
-
-def generate_name_condition_template(
-    first_name: str, last_name: str, gender: str, condition_description: str
-) -> str:
-    title = "Mr" if gender == "M" else "Mrs"  # I guess just assume married w/e idk ?
-    return f"[CLS] {title} {first_name} {last_name} is a yo patient with {condition_description} [SEP]"
+from transformers import BertModel, BertTokenizer
 
 
 def get_frequency_bins(condition_code_to_count: Dict[str, int], condition_type: str) -> List[List[str]]:

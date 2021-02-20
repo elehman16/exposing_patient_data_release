@@ -3,7 +3,8 @@ import argparse
 import numpy as np
 import torch
 from experiments.metrics import precision_at_k
-from experiments.probing.single_condition_probing import get_frequency_bins, get_non_zero_count_conditions
+from experiments.probing.LR_single_condition_probing import get_frequency_bins, get_non_zero_count_conditions
+from experiments.probing.probing_utils import generate_name_condition_template
 from experiments.utilities import (
     filter_condition_code_by_count,
     get_condition_code_to_count,
@@ -43,22 +44,11 @@ def get_as_dataset(tokenizer, templates, labels):
     return ClassificationDataset(batch, labels)
 
 
-def generate_name_condition_template(
-    first_name: str, last_name: str, gender: str, condition_description: str
-) -> str:
-    title = "Mr" if gender == "M" else "Mrs"  # I guess just assume married w/e idk ?
-    return f"[CLS] {title} {first_name} {last_name} is a yo patient with {condition_description} [SEP]"
-
-
-def compute_metrics(pred):
-    return {"auc": roc_auc_score(pred.label_ids, pred.predictions[:, 1])}
-
-
 def train_model(model, train_dataset, validation_dataset):
     model.train()
 
     for param in model.base_model.parameters():
-        param.requires_grad = True 
+        param.requires_grad = True
 
     training_args = TrainingArguments(
         output_dir="./tmp/results",
@@ -75,6 +65,8 @@ def train_model(model, train_dataset, validation_dataset):
         evaluation_strategy="epoch",
         disable_tqdm=True,
     )
+
+    compute_metrics = lambda pred: {"auc": roc_auc_score(pred.label_ids, pred.predictions[:, 1])}
 
     trainer = Trainer(
         model=model,
