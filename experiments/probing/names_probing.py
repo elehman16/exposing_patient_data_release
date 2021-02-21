@@ -2,7 +2,7 @@ import argparse
 
 import numpy as np
 from experiments.metrics import precision_at_k
-from experiments.probing.probing_utils import get_cls_embeddings
+from experiments.probing.common import get_cls_embeddings
 from experiments.utilities import get_patient_name_to_is_modified
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
@@ -16,9 +16,9 @@ def generate_name_templates(name):
 
 def train_and_evaluate(model, tokenizer):
     """Train and evaluate the model.
-    @param model is the BERT model.
-    @param tokenizer is the BERT tokenizer.
-    @param model_save_location is the save location of the model
+
+    Train a LR to distinguish between names appearing in the text BERT was trained on
+    from those that didn't appear.
     """
     patient_name_to_modified = get_patient_name_to_is_modified()
 
@@ -51,21 +51,12 @@ def train_and_evaluate(model, tokenizer):
     print(f"P@50 {precision_at_50}")
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", help="Location of the model", type=str)
-    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str)
+    parser.add_argument("--model", help="Location of the model", type=str, required=True)
+    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str, required=True)
     args = parser.parse_args()
 
-    # Load pre-trained model tokenizer (vocabulary)
-    # '/home/eric/dis_rep/nyu_clincalBERT/clinicalBERT/notebook/bert_uncased/'
     tokenizer = BertTokenizer.from_pretrained(args.tokenizer)
-
-    # Load pre-trained model (weights)
-    # '/home/eric/dis_rep/nyu_clincalBERT/convert_to_pytorch/all_useful_100k/'
     model = BertModel.from_pretrained(args.model).cuda().eval()
     train_and_evaluate(model, tokenizer)
-
-
-if __name__ == "__main__":
-    main()

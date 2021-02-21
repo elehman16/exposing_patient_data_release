@@ -14,6 +14,8 @@ MODIFIED_SUBJECT_IDS = f"{BASE_FOLDER}/setup_outputs/original_MOD_SUBJECT_ID.csv
 SUBJECT_ID_to_ICD9 = f"{BASE_FOLDER}/setup_outputs/SUBJECT_ID_to_ICD9.csv"
 SUBJECT_ID_to_Stanza = f"{BASE_FOLDER}/setup_outputs/SUBJECT_ID_to_Stanza.csv"
 
+condition_type_to_file = {"icd9": SUBJECT_ID_to_ICD9, "stanza": SUBJECT_ID_to_Stanza}
+
 condition_type_to_descriptions = {
     "icd9": f"{BASE_FOLDER}/setup_outputs/ICD9_Descriptions.csv",
     "stanza": f"{BASE_FOLDER}/setup_outputs/Stanza_Descriptions.csv",

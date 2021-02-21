@@ -9,7 +9,6 @@ import spacy
 from tqdm import tqdm
 
 tqdm.pandas()
-import swifter
 
 nlp = spacy.load("en_core_sci_sm")
 tokenizer = nlp.Defaults.create_tokenizer(nlp)
@@ -67,7 +66,7 @@ def train_word_embeddings(args: argparse.Namespace):
 
     output_file = os.path.join(args.output_dir, f"{args.embedding_type}.vectors")
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    model.wv.save(output_file)
+    model.save(output_file)
 
 
 if __name__ == "__main__":

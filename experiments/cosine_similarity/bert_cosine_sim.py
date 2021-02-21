@@ -52,8 +52,7 @@ def get_name_condition_similarities(
             predictions = model(
                 batch.input_ids.cuda(), attention_mask=batch.attention_mask.cuda(), output_hidden_states=True
             )
-            # hidden_states = predictions.last_hidden_state  # (B, L, H)
-            hidden_states = predictions.hidden_states[-2]
+            hidden_states = predictions.last_hidden_state  # (B, L, H)
             template_lengths = batch.attention_mask.sum(-1)
 
             name_embeddings = hidden_states[:, name_start_index:name_end_index]  # (B, L_name, H)
@@ -87,7 +86,7 @@ def get_name_condition_similarities(
     )
 
 
-def main(model, tokenizer: BertTokenizerFast, condition_type):
+def main(model, tokenizer: BertTokenizerFast, condition_type: str):
     """Compute the BERT representations + cosine similarities.
     @param model is the BERT model.
     @param tokenizer is the BERT tokenizer.
@@ -163,17 +162,11 @@ def main(model, tokenizer: BertTokenizerFast, condition_type):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", help="Location of the model", type=str)
-    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str)
-    parser.add_argument("--condition-type")
+    parser.add_argument("--model", help="Location of the model", type=str, required=True)
+    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str, required=True)
+    parser.add_argument("--condition-type", type=str, choices=["icd9", "stanza"], required=True)
 
     args = parser.parse_args()
-
-    # Load pre-trained model tokenizer (vocabulary)
-    # '/home/eric/dis_rep/nyu_clincalBERT/clinicalBERT/notebook/bert_uncased/'
     tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer)
-
-    # Load pre-trained model (weights)
-    # '/home/eric/dis_rep/nyu_clincalBERT/convert_to_pytorch/all_useful_100k/'
     model = BertModel.from_pretrained(args.model).eval().cuda()
     main(model, tokenizer, args.condition_type)

@@ -4,8 +4,7 @@ from typing import Dict, List
 
 import numpy as np
 from experiments.masked_prediction.common import (
-    get_condition_predicted_logit,
-    get_condition_predicted_rank,
+    get_scoring_function,
     get_logits_from_templates,
 )
 from experiments.metrics import precision_at_k
@@ -97,8 +96,6 @@ def evaluate(model, cmp_model, tokenizer, condition_type, metric):
             generate_template(name, patient_info.GENDER, length) for length in condition_wordpiece_lengths
         ]
 
-        start_index = named_templates[0].index("[MASK]")
-
         named_logits = get_logits_from_templates(
             model,
             tokenizer,
@@ -119,18 +116,14 @@ def evaluate(model, cmp_model, tokenizer, condition_type, metric):
 
         score_differences = []
 
-        if metric == "probability":
-            metric_calculator = get_condition_predicted_logit
-        elif metric == "rank":
-            metric_calculator = get_condition_predicted_rank
-        else:
-            raise NotImplementedError(f"{metric} metric not implemented")
+        scoring_function = get_scoring_function(metric)
 
+        start_index = tokenizer.tokenize(named_templates[0]).index("[MASK]")
         for condition in set_to_use:
             condition_wp = condition_code_to_wordpiece_ids[condition]
             condition_length = len(condition_wp)
-            named_score = metric_calculator(named_logits[condition_length], condition_wp, start_index)
-            masked_score = metric_calculator(masked_logits[condition_length], condition_wp, start_index)
+            named_score = scoring_function(named_logits[condition_length], condition_wp, start_index)
+            masked_score = scoring_function(masked_logits[condition_length], condition_wp, start_index)
             score_differences.append(named_score - masked_score)
 
         mroc = roc_auc_score(condition_labels, score_differences)
@@ -140,7 +133,7 @@ def evaluate(model, cmp_model, tokenizer, condition_type, metric):
         avg_mpak.append(mpak)
 
     print("Average model AUC: {}".format(np.average(avg_mroc)))
-    print("Average model P@K: {}".format(np.average(avg_mpak)))    
+    print("Average model P@K: {}".format(np.average(avg_mpak)))
 
 
 if __name__ == "__main__":
@@ -148,11 +141,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--condition-type", choices=["icd9", "stanza"], help="Which condition type to use ?", required=True
     )
-    parser.add_argument("--model", help="Location of the model", type=str)
+    parser.add_argument("--model", help="Location of the model", type=str, required=True)
     parser.add_argument("--cmp-model", help="Location of the comparator model.", type=str)
-    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str)
+    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str, required=True)
     parser.add_argument(
-        "--metric", help="Which metric to calculate delta of ?", type=str, choices=["rank", "probability"]
+        "--metric",
+        help="Which metric to calculate delta of ?",
+        type=str,
+        choices=["rank", "probability"],
+        required=True,
     )
     args = parser.parse_args()
 

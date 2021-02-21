@@ -3,18 +3,22 @@ from typing import Dict, List, Set
 
 import numpy as np
 from experiments.metrics import precision_at_k
-from experiments.probing.probing_utils import (
-    generate_name_condition_template, get_cls_embeddings)
-from experiments.utilities import (PatientInfo, filter_condition_code_by_count,
-                                   get_condition_code_to_count,
-                                   get_condition_code_to_descriptions,
-                                   get_subject_id_to_patient_info)
+from experiments.probing.common import generate_name_condition_template, get_cls_embeddings
+from experiments.utilities import (
+    PatientInfo,
+    filter_condition_code_by_count,
+    get_condition_code_to_count,
+    get_condition_code_to_descriptions,
+    get_subject_id_to_patient_info,
+)
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 from tqdm import tqdm
 from transformers import BertModel, BertTokenizer
+
+import seaborn as sns
 
 
 def get_frequency_bins(condition_code_to_count: Dict[str, int], condition_type: str) -> List[List[str]]:
@@ -108,6 +112,8 @@ def train_and_evaluate(
     auc_score_list, precision_at_10_list = [], []
     for condition in tqdm(sampled_conditions):
         desc = condition_code_to_description[condition]
+
+        ## Get all train templates and labels for all train patients, for this condition
         train_templates = []
         train_labels = []
         for subject_id in train_subject_ids:
@@ -136,11 +142,13 @@ def train_and_evaluate(
         ## Train the LR model
 
         train_embeddings = get_cls_embeddings(model, tokenizer, train_templates, disable_tqdm=True)
-
         clf = LogisticRegression(random_state=2021, max_iter=10000).fit(train_embeddings, train_labels)
+
+        ## Get all test templates and labels for all test patients, for this condition
 
         test_templates = []
         test_labels = []
+
         for subject_id in test_subject_ids:
             patient_info = subject_id_to_patient_info[subject_id]
             template = generate_name_condition_template(
@@ -151,6 +159,8 @@ def train_and_evaluate(
             test_templates.append(template)
             test_labels.append(label)
 
+        ## Get Embeddings for all test patients, and make prediction with LR model
+        
         test_embeddings = get_cls_embeddings(model, tokenizer, test_templates, disable_tqdm=True)
         test_predictions = clf.predict_proba(test_embeddings)[:, 1]
 
@@ -163,29 +173,26 @@ def train_and_evaluate(
     print(f"AUC : Mean {np.mean(auc_score_list)} , SD Dev {np.std(auc_score_list)}")
     print(f"P@10 : Mean {np.mean(precision_at_10_list)} , SD Dev {np.std(precision_at_10_list)}")
 
-    return auc_score_list, precision_at_10_list
 
-
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--condition-type", help="Are we using Stanza conditions?", choices=["icd9", "stanza"]
     )
-    parser.add_argument("--model", help="Location of the model", type=str)
-    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str)
-    parser.add_argument("--conditions", help="Number of conditions to test per bin", type=int, default=50)
-    parser.add_argument("--frequency_bin", help="Which frequency bin to use.", type=int)
+    parser.add_argument("--model", help="Location of the model", type=str, required=True)
+    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str, required=True)
+    parser.add_argument(
+        "--conditions", help="Number of conditions to test per bin", type=int, default=50, required=True
+    )
+    parser.add_argument(
+        "--frequency_bin",
+        help="Which frequency bin to use? Optional -- If not specified, run on all bins separately",
+        type=int,
+    )
     args = parser.parse_args()
 
-    # Load pre-trained model tokenizer (vocabulary)
-    # '/home/eric/dis_rep/nyu_clincalBERT/clinicalBERT/notebook/bert_uncased/')
     tokenizer = BertTokenizer.from_pretrained(args.tokenizer)
-
-    # Load pre-trained model (weights)
-    # '/home/eric/dis_rep/nyu_clincalBERT/convert_to_pytorch/all_useful_100k/'
     model = BertModel.from_pretrained(args.model).cuda().eval()
-    return train_and_evaluate(model, tokenizer, args.condition_type, args.frequency_bin, args.conditions)
 
+    train_and_evaluate(model, tokenizer, args.condition_type, args.frequency_bin, args.conditions)
 
-if __name__ == "__main__":
-    main()

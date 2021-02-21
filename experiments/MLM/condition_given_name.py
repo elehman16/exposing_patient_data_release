@@ -21,10 +21,13 @@ from transformers import BertForMaskedLM, BertTokenizer
 
 
 def condition_only_template(condition_length: int) -> str:
-    return "[CLS] {}[SEP]".format("[MASK] " * condition_length)
+    """Generate empty template with condition replaces with [MASK] string of `condition_length`"""
+    mask_string = "[MASK] " * condition_length
+    return f"[CLS] {mask_string.strip()} [SEP]"
 
 
 def name_with_condition_template(first_name: str, last_name: str, gender: str, condition_length: int) -> str:
+    """Generate filled template with condition replaces with [MASK] string of `condition_length`"""
     title = "Mr" if gender == "M" else "Mrs"  # I guess just assume married w/e idk ?
     mask_string = "[MASK] " * condition_length
     return f"[CLS] {title} {first_name} {last_name} is a yo patient with {mask_string.strip()} [SEP]"
@@ -33,7 +36,24 @@ def name_with_condition_template(first_name: str, last_name: str, gender: str, c
 def evaluate(model: BertForMaskedLM, tokenizer: BertTokenizer, condition_type: str):
     """
     Evaluate the performance of the model in terms of being able to predict
-    conditions associated with certain names (via templates).
+    conditions associated with certain names (via masked language modelling task on templates).
+
+    For each patient,
+        For each condition,
+            create template with name filled and condition masked.\ 
+            get MLM probability distribution for [MASK] tokens.\ 
+            get average probability of condition's wordpieces.\ 
+        Compute ROC / P@10 against true condition labels.
+    Report Average over patients.
+
+    Ideally we want higher average probability for conditions that patient have, than for conditions they
+    don't have. 
+
+    We also include a condition only baseline (where template doesn't contain the patient name). The
+    algorithm above remains same.
+
+    ### Args:
+        condition_type: Which conditions to load for patients. Currently take value in [icd9, stanza]
     """
 
     ### Load relevant data
@@ -58,7 +78,7 @@ def evaluate(model: BertForMaskedLM, tokenizer: BertTokenizer, condition_type: s
             tokenizer.tokenize(condition_code_to_description[condition])
         )
         for condition in set_to_use
-    }  ## Time Saving Measure since we only need condition wordpiece ids
+    }  ## Time Saving Measure since we only need condition wordpiece ids moving forward
 
     condition_wordpiece_lengths = [
         len(condition_code_to_wordpiece_ids[condition]) for condition in set_to_use
@@ -75,6 +95,7 @@ def evaluate(model: BertForMaskedLM, tokenizer: BertTokenizer, condition_type: s
 
     ### Get Condition only template logits
 
+    ## Generate Template for each unique condition wordpiece length
     condition_only_templates = [condition_only_template(length) for length in condition_wordpiece_lengths]
 
     logits = get_logits_from_templates(model, tokenizer, condition_only_templates)
@@ -108,6 +129,7 @@ def evaluate(model: BertForMaskedLM, tokenizer: BertTokenizer, condition_type: s
         if condition_labels.sum() == 0:
             continue  ## Skip if patient is negative for all conditions
 
+        ## Generate Template for each unique condition wordpiece length
         templates = []
         for length in condition_wordpiece_lengths:
             template = name_with_condition_template(
@@ -115,14 +137,17 @@ def evaluate(model: BertForMaskedLM, tokenizer: BertTokenizer, condition_type: s
             )
             templates.append(template)
 
-        logits = get_logits_from_templates(model, tokenizer, templates)
+        ## Get logits for all templates
+        logits = get_logits_from_templates(model, tokenizer, templates, normalize=False)
         logits = {length: logit for length, logit in zip(condition_wordpiece_lengths, logits)}
 
+        ## Get Start index for (masked) condition in each template 
         start_indices = [tokenizer.tokenize(template).index("[MASK]") for template in templates]
         start_indices = {
             length: start_index for length, start_index in zip(condition_wordpiece_lengths, start_indices)
         }
 
+        ## For each condition, get corresponding logit array and then compute average score
         condition_subject_logits = []
         for condition in set_to_use:
             condition_wp_ids = condition_code_to_wordpiece_ids[condition]
@@ -134,7 +159,6 @@ def evaluate(model: BertForMaskedLM, tokenizer: BertTokenizer, condition_type: s
             )
 
         ### Calculate and store metrics for this patient
-
         _baseline_roc = roc_auc_score(condition_labels, condition_baseline_counts)
         _condition_only_roc = roc_auc_score(condition_labels, condition_only_logits)
         _model_roc = roc_auc_score(condition_labels, condition_subject_logits)

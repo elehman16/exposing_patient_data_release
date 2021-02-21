@@ -34,16 +34,23 @@ def replace_text_with_regex(text, name, search_term):
     return re.sub(pattern, name, text)
 
 
-def add_name(row, insert_at_bos):
+def add_name(row):
     first_name = row["FIRST_NAME"]
     last_name = row["LAST_NAME"]
-    note = row["TEXT"]
+    original_note = row["TEXT"]
 
-    note = replace_text_with_regex(note, first_name, "Known firstname")
+    note = replace_text_with_regex(original_note, first_name, "Known firstname")
     note = replace_text_with_regex(note, last_name, "Known lastname")
 
-    if insert_at_bos:
-        note = "\n".join([f"{first_name} {last_name} {sentence}" for sentence in note.split("\n")])
+    return note
+
+
+def add_name_at_bos(row):
+    first_name = row["FIRST_NAME"]
+    last_name = row["LAST_NAME"]
+    note = row["MOD_TEXT"]
+
+    note = "\n".join([f"{first_name} {last_name} {sentence}" for sentence in note.split("\n")])
 
     return note
 
@@ -60,9 +67,11 @@ def run(input_file, input_names, output_csv, insert_name_at_bos):
     subject_id_to_names = pd.read_csv(input_names)
 
     subject_id_to_notes = subject_id_to_notes.merge(subject_id_to_names, how="inner", on="SUBJECT_ID")
-    subject_id_to_notes["MOD_TEXT"] = subject_id_to_notes.progress_apply(
-        lambda row: add_name(row, insert_name_at_bos), axis=1
-    )
+    subject_id_to_notes["MOD_TEXT"] = subject_id_to_notes.progress_apply(add_name, axis=1)
+
+    if insert_name_at_bos:
+        subject_id_to_notes["MOD_TEXT"] = subject_id_to_notes.progress_apply(add_name_at_bos, axis=1)
+
     subject_id_to_notes["MODIFIED"] = subject_id_to_notes.apply(lambda x: x.TEXT != x.MOD_TEXT, axis=1)
 
     print("Num Modified", subject_id_to_notes[subject_id_to_notes.MODIFIED].SUBJECT_ID.unique().size)
@@ -78,14 +87,6 @@ def run(input_file, input_names, output_csv, insert_name_at_bos):
 
 
 from argparse import ArgumentParser
-
-parser = ArgumentParser()
-parser.add_argument("--input-file", required=True)
-parser.add_argument("--input-names", required=True)
-parser.add_argument("--output-csv", required=True)
-parser.add_argument(
-    "--insert-name-at-bos", action="store_true", help="Specify this to add name at beginning of sentence"
-)
 
 if __name__ == "__main__":
     """
@@ -103,6 +104,14 @@ if __name__ == "__main__":
         250,note 4, 0
         250,note 5, 1
     """
+
+    parser = ArgumentParser()
+    parser.add_argument("--input-file", required=True)
+    parser.add_argument("--input-names", required=True)
+    parser.add_argument("--output-csv", required=True)
+    parser.add_argument(
+        "--insert-name-at-bos", action="store_true", help="Specify this to add name at beginning of sentence"
+    )
 
     args = parser.parse_args()
     run(args.input_file, args.input_names, args.output_csv, args.insert_name_at_bos)

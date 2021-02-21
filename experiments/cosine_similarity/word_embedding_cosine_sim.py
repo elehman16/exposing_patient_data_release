@@ -1,5 +1,5 @@
 import argparse
-from typing import Dict, List
+from typing import Dict
 
 import gensim
 import numpy as np
@@ -108,12 +108,8 @@ from training_scripts.train_word_embeddings import callback as callback
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-file", help="Location of the model.", type=str)
-    parser.add_argument("--output-file", type=str)
-    parser.add_argument("--condition-type")
+    parser.add_argument("--condition-type", type=str, choices=["icd9", "stanza"], required=True)
 
     args = parser.parse_args()
-
-    model = gensim.models.Word2Vec.load(args.model_file)
-    model = model.wv
-
+    model = gensim.models.Word2Vec.load(args.model_file).wv
     main(model, args.condition_type)

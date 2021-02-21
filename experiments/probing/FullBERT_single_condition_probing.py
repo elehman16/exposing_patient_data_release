@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from experiments.metrics import precision_at_k
 from experiments.probing.LR_single_condition_probing import get_frequency_bins, get_non_zero_count_conditions
-from experiments.probing.probing_utils import generate_name_condition_template
+from experiments.probing.common import generate_name_condition_template
 from experiments.utilities import (
     filter_condition_code_by_count,
     get_condition_code_to_count,

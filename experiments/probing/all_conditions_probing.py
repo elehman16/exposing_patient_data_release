@@ -18,18 +18,23 @@ from sklearn.utils import resample
 from tqdm import tqdm
 from transformers import BertModel, BertTokenizerFast
 
-from experiments.probing.common import generate_condition_only_template, generate_name_condition_template, get_cls_embeddings
+from experiments.probing.common import (
+    generate_condition_only_template,
+    generate_name_condition_template,
+    get_cls_embeddings,
+)
 
 
-def run_probe(model: BertModel, tokenizer: BertTokenizerFast, condition_type: str, mode: str, prober: str):
+def run_probe(
+    model: BertModel, tokenizer: BertTokenizerFast, condition_type: str, template_mode: str, prober: str
+):
     """Train and evaluate the model trained on the data.
 
     Args:
-        model: is the BERT model used to encode the CLS tokens.
-        tokenizer: is the BERT tokenizer.
-        condition_type: is whether or not we use stanza labels.
-        mode: is what binary element we are trying to predict via the template.
-        f: is the file location of where to save the model.
+        condition_type: icd9 or Stanza
+        template_mode: Choices in [name_and_condition, condition_only].
+                        Specify if name should be included in template
+        prober: LR or MLP
     """
 
     ### Get Relevant Data
@@ -63,14 +68,14 @@ def run_probe(model: BertModel, tokenizer: BertTokenizerFast, condition_type: st
         patient_info = subject_id_to_patient_info[subject_id]
         for condition in set_to_use:
             desc = condition_code_to_description[condition]
-            if mode == "name_and_condition":
+            if template_mode == "name_and_condition":
                 template = generate_name_condition_template(
                     patient_info.FIRST_NAME, patient_info.LAST_NAME, patient_info.GENDER, desc
                 )
-            elif mode == "condition_only":
+            elif template_mode == "condition_only":
                 template = generate_condition_only_template(desc)
             else:
-                raise NotImplementedError(f"{mode} is not available")
+                raise NotImplementedError(f"{template_mode} is not available")
             subject_condition_templates.append(template)
 
         condition_labels = get_condition_labels_as_vector(patient_info.CONDITIONS, condition_code_to_index)
@@ -96,13 +101,15 @@ def run_probe(model: BertModel, tokenizer: BertTokenizerFast, condition_type: st
     train_cls_embeddings = get_cls_embeddings(model, tokenizer, train_templates)
 
     print(f"Training {prober} Model")
-    if prober == "LR" :
+    if prober == "LR":
         classifier = LogisticRegression(random_state=2021, max_iter=10000).fit(
             train_cls_embeddings, train_labels
         )
-    elif prober == "MLP" :
-        classifier = MLPClassifier(hidden_layer_sizes=(128,), random_state=2021).fit(train_cls_embeddings, train_labels)
-    else :
+    elif prober == "MLP":
+        classifier = MLPClassifier(hidden_layer_sizes=(128,), random_state=2021).fit(
+            train_cls_embeddings, train_labels
+        )
+    else:
         raise NotImplementedError(f"{prober} not implemented")
     print(f"{prober} Model Trained")
 
@@ -115,14 +122,14 @@ def run_probe(model: BertModel, tokenizer: BertTokenizerFast, condition_type: st
         patient_info = subject_id_to_patient_info[subject_id]
         for condition in set_to_use:
             desc = condition_code_to_description[condition]
-            if mode == "name_and_condition":
+            if template_mode == "name_and_condition":
                 template = generate_name_condition_template(
                     patient_info.FIRST_NAME, patient_info.LAST_NAME, patient_info.GENDER, desc
                 )
-            elif mode == "condition_only":
+            elif template_mode == "condition_only":
                 template = generate_condition_only_template(desc)
             else:
-                raise NotImplementedError(f"{mode} is not available")
+                raise NotImplementedError(f"{template_mode} is not available")
             test_templates.append(template)
 
         condition_labels = get_condition_labels_as_vector(patient_info.CONDITIONS, condition_code_to_index)
@@ -143,18 +150,25 @@ def run_probe(model: BertModel, tokenizer: BertTokenizerFast, condition_type: st
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--condition-type", type=str, choices=["icd9", "stanza"])
-    parser.add_argument("--model", help="Location of the model", type=str)
-    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str)
+    parser.add_argument("--model", help="Location of the model", type=str, required=True)
+    parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str, required=True)
+    parser.add_argument("--condition-type", type=str, choices=["icd9", "stanza"], required=True)
     parser.add_argument(
-        "--mode",
+        "--template-mode",
         help="Normal, only use masked conditons for predictions (no names)?",
         type=str,
         choices=["name_and_condition", "condition_only"],
+        required=True,
     )
-    parser.add_argument("--prober", type=str, choices=["LR", "MLP"])
+    parser.add_argument(
+        "--prober",
+        type=str,
+        choices=["LR", "MLP"],
+        required=True,
+        help="Which probing model to train on top of BERT embeddings ?",
+    )
     args = parser.parse_args()
 
     tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer)
     model = BertModel.from_pretrained(args.model).cuda().eval()
-    run_probe(model, tokenizer, args.condition_type, args.mode, args.prober)
+    run_probe(model, tokenizer, args.condition_type, args.template_mode, args.prober)

@@ -1,4 +1,9 @@
-# exposing_patient_data_clean
+# Release Version of Does BERT leak Patient Data ?
+
+Some things to keep in mind
+---------------------------
+
+* We use the term `modified` in many places in the code. This is used to denote if the patient name or their subject id had atleast one occurence in the MIMIC pseudo-reidentified corpus that Clinical BERT was trained. Many experiments are either run only on modified patient info (for example, measuring P(condition | patient name)), in other places, we use a method to distinguish whether a patient name appeared in the corpus or not (for example, names_probing.py)
 
 Setup
 =====
@@ -54,6 +59,48 @@ Experiments
 
 Running Specific Experiments
 =============================
+
+## MLM Experiments
+
+### 1. Using MLM, Compute and measure P(condition | name) or P(condition)
+
+```bash
+python experiments/MLM/condition_given_name.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9
+```
+
+### 2. Using MLM, Compute and measure P(condition | name) - P(condition | name masked)
+
+```bash
+python experiments/MLM/condition_given_name_vs_masked.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
+```
+
+### 3. Using MLM, Compute and measure P(name | condition) - P(name | condition masked)
+
+```bash
+python experiments/MLM/name_given_condition_vs_masked.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
+```
+
+### 4. Using MLM, Compute and measure P(last name | first name) for modified vs unmodified patients
+
+```bash
+python experiments/MLM/first_name_given_last_name.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank} --mode {mask_first|mask_last}
+```
+
+## Probing Experiments
+
+### 1. Using Probing, Compute and Probe for Score(name, condition). Use common LR/MLP model for all conditions.
+
+
+### 2. Divide conditions in bins, select 50 conditions in each bin randomly and train individual probers for each condition.
+
+* LR Version
+
+* BERT Fine tuned version
+
+
+### 3. Probe for names. Run a probe to distinguish modified vs unmodified patient names.
+
+
 First, configure the config.py file to have the correct file paths. Next, we will describe how to get the results from the paper.
 1. To get the results for **Table 1**,  **Table 2**, and **Figure 1**, see the file `experiments/masked_prediction/missing_word_predictions.py`.
 We also have these experiments that are available to run in `scripts/run_masked_prediction.sh`.
