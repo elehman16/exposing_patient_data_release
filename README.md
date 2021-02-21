@@ -3,7 +3,7 @@
 Some things to keep in mind
 ---------------------------
 
-* We use the term `modified` in many places in the code. This is used to denote if the patient name or their subject id had atleast one occurence in the MIMIC pseudo-reidentified corpus that Clinical BERT was trained. Many experiments are either run only on modified patient info (for example, measuring P(condition | patient name)), in other places, we use a method to distinguish whether a patient name appeared in the corpus or not (for example, names_probing.py)
+* We use the term `reidentified` in many places in the code. This is used to denote if the patient name or their subject id had atleast one occurence in the MIMIC pseudo-reidentified corpus that Clinical BERT was trained. Many experiments are either run only on reidentified patients only (for example, measuring P(condition | patient name)), in other places, we use a method to distinguish whether a patient name appeared in the corpus or not (for example, names_probing.py)
 
 Setup
 =====
@@ -55,10 +55,9 @@ Embeddings Training
 Experiments
 ============
 
-1. Takes in `SUBJECT_ID_to_*.csv` files as needed and `ClinicalBERT_*\` directories as needed and run whatever experiments we want to perform.
+$path_to_model = `ClinicalBERT_{1a|1b}/model_512/` For BERT
 
-Running Specific Experiments
-=============================
+$path_to_model = `Embedding_{1a|1b}/{cbow|skipgram}.vectors` For Word Embeddings
 
 ## MLM Experiments
 
@@ -80,7 +79,7 @@ python experiments/MLM/condition_given_name_vs_masked.py --model $path_to_model 
 python experiments/MLM/name_given_condition_vs_masked.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
 ```
 
-### 4. Using MLM, Compute and measure P(last name | first name) for modified vs unmodified patients
+### 4. Using MLM, Compute and measure P(last name | first name) for reidentified vs unreidentified patients
 
 ```bash
 python experiments/MLM/first_name_given_last_name.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank} --mode {mask_first|mask_last}
@@ -90,36 +89,40 @@ python experiments/MLM/first_name_given_last_name.py --model $path_to_model --to
 
 ### 1. Using Probing, Compute and Probe for Score(name, condition). Use common LR/MLP model for all conditions.
 
+```bash
+python experiments/probing/all_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --template-mode {name_and_condition | condition_only} --prober {LR|MLP}
+```
 
 ### 2. Divide conditions in bins, select 50 conditions in each bin randomly and train individual probers for each condition.
 
 * LR Version
 
+```bash
+python experiments/probing/LR_single_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --frequency-bin {0|1|2|3}
+```
+
 * BERT Fine tuned version
 
+```bash
+python experiments/probing/FullBERT_single_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --frequency-bin {0|1|2|3}
+```
 
-### 3. Probe for names. Run a probe to distinguish modified vs unmodified patient names.
+### 3. Probe for names. Run a probe to distinguish reidentified vs non-reidentified patient names.
 
+```bash
+python experiments/probing/names_probing.py --model $path_to_model --tokenizer bert-base-uncased
+```
 
-First, configure the config.py file to have the correct file paths. Next, we will describe how to get the results from the paper.
-1. To get the results for **Table 1**,  **Table 2**, and **Figure 1**, see the file `experiments/masked_prediction/missing_word_predictions.py`.
-We also have these experiments that are available to run in `scripts/run_masked_prediction.sh`.
-2. To get the results for **Table 3**, see the file `experiments/probing/linear_layer_missing_predictions.py`.
-We also have these experiments that are available to run in `scripts/run_probing.sh`.
-3. To get the results for **Figure 2**, see the file `experiments/probing/single_condition_probing.py` or `torch_single_condition_probing.py`.
-Both of the files are equivalent, but one allows for easy finetuning of BERT.
-We also have these experiments that are available to run in `scripts/run_probing.sh`
-4. To get the results from **Table 4**, see the file `experiments/probing/names_probing.py`.
-We also have these experiments that are available to run in `scripts/run_probing.sh`
-5. To get the results from **Figure 3**, see the files `experiments/cosine_similarity/bert_cosine_sim.py`
-and `experiments/cosine_similarity/word_embedding_cosine_sim.py`. We also have these
-experiments ready to run in `scripts/run_cosine_sim.sh`.
-6. To get the results for **Figure 4**, see the file `experiments/masked_prediction/diff_in_masked_pr_names.py`.
-We also have these experiments ready to run in `scripts/run_diff_in_pr_name.sh`.
-7. To get the results for **Table 5**, see the file `experiments/masked_prediction/diff_in_masked_pred.py`.
-We have these experiments ready to run in `scripts/run_diff_in_masked_pred.sh`.
+## Cosine Similarity Experiments
 
-TODO
-=====
-1. Fix other probing to use Torch.
-2. Use updated HuggingFace for everything.
+### 1. Compute and measure cosine similarity between name and condition wordpiece embeddings from BERT
+
+```bash
+python experiments/cosine_similarity/bert_cosine_sim.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9
+```
+
+### 2. Compute and measure cosine similarity between name and condition token embeddings under Word Embedding Models (cbow or SG)
+
+```bash
+python experiments/cosine_similarity/word_embedding_cosine_sim.py --model-file $path_to_model --condition-type icd9
+```

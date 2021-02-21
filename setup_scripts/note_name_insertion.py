@@ -82,7 +82,7 @@ def run(input_file, input_names, output_csv, insert_name_at_bos):
 
     if not insert_name_at_bos:
         subject_id_to_notes[subject_id_to_notes.MODIFIED][["SUBJECT_ID"]].drop_duplicates().to_csv(
-            os.path.join(os.path.dirname(output_csv), "modified_subject_ids.csv"), index=False
+            os.path.join(os.path.dirname(output_csv), "reidentified_subject_ids.csv"), index=False
         )
 
 

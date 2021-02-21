@@ -5,7 +5,7 @@ from collections import namedtuple
 from typing import Dict, List, Set
 
 
-def get_modified_subject_ids_set() -> Set[str]:
+def get_reidentified_subject_ids_set() -> Set[str]:
     """Return the set of subject ids for patients that had their names occur in notes"""
     return set(pd.read_csv(config.MODIFIED_SUBJECT_IDS).SUBJECT_ID.values)
 
@@ -13,7 +13,7 @@ def get_modified_subject_ids_set() -> Set[str]:
 PatientInfo = namedtuple("PatientInfo", field_names=["FIRST_NAME", "LAST_NAME", "GENDER", "CONDITIONS"])
 
 def get_subject_id_to_patient_info(condition_type: str) -> Dict[str, PatientInfo]:
-    """Return a Dict mapping [modified] subject id to Patient Info associated with it.
+    """Return a Dict mapping [reidentified] subject id to Patient Info associated with it.
 
     ### Args:
         condition_type: What conditions to include in PatientInfo. Takes value in [icd9, stanza]
@@ -28,11 +28,11 @@ def get_subject_id_to_patient_info(condition_type: str) -> Dict[str, PatientInfo
     ## Select ICD9 or Stanza on basis of condition_type
     subject_id_to_condition_codes = pd.read_csv(config.condition_type_to_file[condition_type])
 
-    ## Filter to modified subject ids only
-    modified_subject_ids = get_modified_subject_ids_set()
-    subject_id_to_names = subject_id_to_names[subject_id_to_names.SUBJECT_ID.isin(modified_subject_ids)]
+    ## Filter to reidentified subject ids only
+    reidentified_subject_ids = get_reidentified_subject_ids_set()
+    subject_id_to_names = subject_id_to_names[subject_id_to_names.SUBJECT_ID.isin(reidentified_subject_ids)]
     subject_id_to_condition_codes = subject_id_to_condition_codes[
-        subject_id_to_condition_codes.SUBJECT_ID.isin(modified_subject_ids)
+        subject_id_to_condition_codes.SUBJECT_ID.isin(reidentified_subject_ids)
     ]
 
     ## Convert to subject_id to list of conditions
@@ -57,20 +57,20 @@ def get_subject_id_to_patient_info(condition_type: str) -> Dict[str, PatientInfo
     return dict(zip(subject_ids, patient_info))
 
 
-def get_patient_name_to_is_modified() -> Dict[str, int]:
-    """Return a Dict mapping patient full name to label indicating whether the patient was modified."""
+def get_patient_name_to_is_reidentified() -> Dict[str, int]:
+    """Return a Dict mapping patient full name to label indicating whether the patient was reidentified."""
     subject_id_to_name = pd.read_csv(config.SUBJECT_ID_to_NAME)
     subject_id_to_name.fillna("", inplace=True)
 
-    modified_subject_ids: Set[str] = get_modified_subject_ids_set()
+    reidentified_subject_ids: Set[str] = get_reidentified_subject_ids_set()
 
     subject_id_to_name["MODIFIED"] = subject_id_to_name.SUBJECT_ID.apply(
-        lambda x: 1 if x in modified_subject_ids else 0
+        lambda x: 1 if x in reidentified_subject_ids else 0
     )
     names: List[str] = list((subject_id_to_name.FIRST_NAME + " " + subject_id_to_name.LAST_NAME).values)
-    modified: List[int] = list(subject_id_to_name.MODIFIED.values)
+    reidentified: List[int] = list(subject_id_to_name.MODIFIED.values)
 
-    labeled_names: Dict[str, int] = dict(zip(names, modified))
+    labeled_names: Dict[str, int] = dict(zip(names, reidentified))
 
     return labeled_names
 
@@ -80,12 +80,12 @@ def get_patient_name_to_is_modified() -> Dict[str, int]:
 
 def get_condition_code_to_count(condition_type: str) -> Dict[str, int]:
     """Return a dictionary mapping condition code to count of occurrence
-    (= how many [modified] patients have that code)
+    (= how many [reidentified] patients have that code)
 
     ### Args:
         condition_type: What conditions to return count of. Takes value in [icd9, stanza]
     """
-    modified_subject_ids = get_modified_subject_ids_set()
+    reidentified_subject_ids = get_reidentified_subject_ids_set()
 
     assert (
         condition_type in config.condition_type_to_file
@@ -93,8 +93,8 @@ def get_condition_code_to_count(condition_type: str) -> Dict[str, int]:
 
     subject_id_to_icd = pd.read_csv(config.condition_type_to_file[condition_type])
 
-    ## Filter to modified subject ids only
-    subject_id_to_icd = subject_id_to_icd[subject_id_to_icd.SUBJECT_ID.isin(modified_subject_ids)]
+    ## Filter to reidentified subject ids only
+    subject_id_to_icd = subject_id_to_icd[subject_id_to_icd.SUBJECT_ID.isin(reidentified_subject_ids)]
     return subject_id_to_icd.CODE.value_counts().to_dict()
 
 

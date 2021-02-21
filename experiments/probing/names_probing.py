@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 from experiments.metrics import precision_at_k
 from experiments.probing.common import get_cls_embeddings
-from experiments.utilities import get_patient_name_to_is_modified
+from experiments.utilities import get_patient_name_to_is_reidentified
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
@@ -20,23 +20,23 @@ def train_and_evaluate(model, tokenizer):
     Train a LR to distinguish between names appearing in the text BERT was trained on
     from those that didn't appear.
     """
-    patient_name_to_modified = get_patient_name_to_is_modified()
+    patient_name_to_reidentified = get_patient_name_to_is_reidentified()
 
-    print(np.array(list(patient_name_to_modified.values())).mean())
+    print(np.array(list(patient_name_to_reidentified.values())).mean())
 
-    names = list(patient_name_to_modified.keys())
+    names = list(patient_name_to_reidentified.keys())
 
     train_names, test_names = train_test_split(names, train_size=0.5, random_state=2021, shuffle=True)
 
     train_templates = [generate_name_templates(name) for name in train_names]
-    train_labels = [patient_name_to_modified[name] for name in train_names]
+    train_labels = [patient_name_to_reidentified[name] for name in train_names]
 
     train_embeddings = get_cls_embeddings(model, tokenizer, train_templates)
 
     clf = LogisticRegression(random_state=2021, max_iter=10000).fit(train_embeddings, train_labels)
 
     test_templates = [generate_name_templates(name) for name in test_names]
-    test_labels = [patient_name_to_modified[name] for name in test_names]
+    test_labels = [patient_name_to_reidentified[name] for name in test_names]
 
     test_embeddings = get_cls_embeddings(model, tokenizer, test_templates)
 

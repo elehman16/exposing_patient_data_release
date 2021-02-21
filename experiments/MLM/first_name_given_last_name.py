@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 from experiments.masked_prediction.common import (get_logits_from_templates,
                                                   get_scoring_function)
-from experiments.utilities import get_patient_name_to_is_modified
+from experiments.utilities import get_patient_name_to_is_reidentified
 from tqdm import tqdm
 from transformers import BertForMaskedLM, BertTokenizer
 
@@ -41,7 +41,7 @@ def evaluate(model, comparator_model, tokenizer: BertTokenizer, mode: str, metri
     @param mode is if we do this normally or mask out everything.
     """
 
-    patient_name_to_modified = get_patient_name_to_is_modified()
+    patient_name_to_reidentified = get_patient_name_to_is_reidentified()
 
     filled_templates = []
     masked_templates = []
@@ -49,7 +49,7 @@ def evaluate(model, comparator_model, tokenizer: BertTokenizer, mode: str, metri
     start_indices = []
     labels = []
 
-    for name, is_modified in tqdm(patient_name_to_modified.items()):
+    for name, is_reidentified in tqdm(patient_name_to_reidentified.items()):
         first_name, last_name = name.split(" ", 1)
         if len(first_name) == 0 or len(last_name) == 0:
             continue
@@ -69,7 +69,7 @@ def evaluate(model, comparator_model, tokenizer: BertTokenizer, mode: str, metri
         start_index = tokenizer.tokenize(filled_template).index("[MASK]")
         start_indices.append(start_index)
 
-        labels.append(is_modified)
+        labels.append(is_reidentified)
 
     scoring_function = get_scoring_function(metric)
 
