@@ -3,7 +3,7 @@ from typing import Dict, List
 
 import numpy as np
 import torch
-from experiments.metrics import differential_similarity
+from experiments.metrics import differential_score
 from experiments.utilities import (
     filter_condition_code_by_count,
     get_condition_code_to_count,
@@ -152,9 +152,9 @@ def main(model, tokenizer: BertTokenizerFast, condition_type: str):
 
         condition_labels = get_condition_labels_as_vector(patient_info.CONDITIONS, condition_code_to_index)
 
-        mean_differential_sim.append(differential_similarity(condition_labels, mean_similarities))
-        max_differential_sim.append(differential_similarity(condition_labels, max_similarities))
-        all_pair_differential_sim.append(differential_similarity(condition_labels, all_pair_similarities))
+        mean_differential_sim.append(differential_score(condition_labels, mean_similarities))
+        max_differential_sim.append(differential_score(condition_labels, max_similarities))
+        all_pair_differential_sim.append(differential_score(condition_labels, all_pair_similarities))
 
     print(f"Mean Mean Pos-Neg {np.average(mean_differential_sim)}")
     print(f"SD Mean Pos-Neg {np.std(mean_differential_sim)}")
