@@ -170,6 +170,8 @@ def train_and_evaluate(
             total_indices, train_size=0.85, random_state=2021, shuffle=True
         )
 
+        # Not too sure we can ensure the validation templates have a positive label in it...
+        # Or if there is only 1, that it doesn't end up in the validation set.
         validation_templates = [train_templates[i] for i in validation_indices]
         validation_labels = [train_labels[i] for i in validation_indices]
 

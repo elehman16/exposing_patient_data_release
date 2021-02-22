@@ -1,9 +1,6 @@
 from argparse import ArgumentParser
 
 import pandas as pd
-from tqdm import tqdm 
-
-tqdm.pandas()
 
 import re
 import string
