@@ -107,13 +107,13 @@ python experiments/MLM/condition_given_name.py --model $path_to_model --tokenize
 ### 2. Using MLM, Compute and measure P(condition | name) - P(condition | name masked)
 
 ```bash
-python experiments/MLM/condition_given_name_vs_masked.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
+python experiments/MLM/condition_given_name_vs_mask.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
 ```
 
 ### 3. Using MLM, Compute and measure P(name | condition) - P(name | condition masked)
 
 ```bash
-python experiments/MLM/name_given_condition_vs_masked.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
+python experiments/MLM/name_given_condition_vs_mask.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
 ```
 
 ### 4. Using MLM, Compute and measure P(last name | first name) for reidentified vs unreidentified patients
