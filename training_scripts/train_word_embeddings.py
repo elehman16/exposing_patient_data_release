@@ -40,7 +40,7 @@ def train_word_embeddings(args: argparse.Namespace):
     @param window_size is the window size of the model.
     @param model_save_name is where to save the model.
     """
-    notes = pd.read_csv(args.input_file).TEXT[:10000]
+    notes = pd.read_csv(args.input_file).TEXT
 
     print("Loaded Text")
     sentences = notes.progress_apply(

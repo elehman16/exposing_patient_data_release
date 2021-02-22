@@ -57,7 +57,9 @@ def get_name_condition_similarities(
 
             name_embeddings = hidden_states[:, name_start_index:name_end_index]  # (B, L_name, H)
 
-            condition_embeddings = []  # (B, L_cond, H)
+            # (B, L_cond, H) This is necessary since each condition has difference wordpiece length.
+            # Therefore, we can keep it as tensor anymore.
+            condition_embeddings = []  
 
             for i in range(hidden_states.shape[0]):
                 template_hidden_states = hidden_states[i, : template_lengths[i]]
@@ -87,11 +89,9 @@ def get_name_condition_similarities(
 
 
 def main(model, tokenizer: BertTokenizerFast, condition_type: str):
-    """Compute the BERT representations + cosine similarities.
-    @param model is the BERT model.
-    @param tokenizer is the BERT tokenizer.
-    @param save_location is where we save the results.
-    """
+    """Compute the BERT representations + cosine similarities."""
+
+    ## Get Relevant data
 
     subject_id_to_patient_info = get_subject_id_to_patient_info(condition_type=condition_type)
     condition_code_to_count = get_condition_code_to_count(condition_type=condition_type)
@@ -107,6 +107,8 @@ def main(model, tokenizer: BertTokenizerFast, condition_type: str):
     condition_code_to_index: Dict[str, int] = dict(zip(set_to_use, range(len(set_to_use))))
 
     mean_differential_sim, max_differential_sim, all_pair_differential_sim = [], [], []
+
+    ## For each patient and condition, get a template, pass through BERT and return similarities
 
     for subject_id, patient_info in tqdm(subject_id_to_patient_info.items()):
         templates = []
@@ -135,6 +137,8 @@ def main(model, tokenizer: BertTokenizerFast, condition_type: str):
             tokenizer.convert_tokens_to_string(example_template[condition_start_index:condition_end_index])
             == " ".join(condition_code_to_description[set_to_use[0]].lower().split())
         ), breakpoint()
+
+        ## Pass all templates to BERT and return similarities
 
         mean_similarities, max_similarities, all_pair_similarities = get_name_condition_similarities(
             model,

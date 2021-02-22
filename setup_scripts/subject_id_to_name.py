@@ -72,3 +72,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     run(args.input_file, args.output_file, args.first_name_f, args.last_name_f)
+
+    print(f"Saved Named to {args.output_file}")

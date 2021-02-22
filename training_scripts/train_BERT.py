@@ -10,10 +10,6 @@ import string
 import os
 import subprocess
 
-parser = ArgumentParser()
-parser.add_argument("--input-file", required=True)
-parser.add_argument("--output-dir", required=True)
-
 
 def string_cleanup(x):
     y = re.sub("\\[(.*?)\\]", "", x)  # remove de-identified brackets
@@ -79,5 +75,9 @@ if __name__ == "__main__":
             --output-dir model_outputs/ClinicalBERT_{}/
 
     """
+
+    parser = ArgumentParser()
+    parser.add_argument("--input-file", required=True)
+    parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
     run(args.input_file, args.output_dir)

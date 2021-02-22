@@ -115,3 +115,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     run(args.input_file, args.input_names, args.output_csv, args.insert_name_at_bos)
+    print(f"Insertion Done and Saved at {args.output_csv}")

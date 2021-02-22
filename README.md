@@ -5,6 +5,10 @@ Some things to keep in mind
 
 * We use the term `reidentified` in many places in the code. This is used to denote if the patient name or their subject id had atleast one occurence in the MIMIC pseudo-reidentified corpus that Clinical BERT was trained. Many experiments are either run only on reidentified patients only (for example, measuring P(condition | patient name)), in other places, we use a method to distinguish whether a patient name appeared in the corpus or not (for example, names_probing.py)
 
+* Below whenever you see something like {...|...|...}, etc, this means you have a choice and can choose one.
+
+* Make sure to **`export PYTHONPATH=.`** before running any command. Run any command from the directory containing this README.
+
 Setup
 =====
 
@@ -14,7 +18,11 @@ Setup
     - `data/NOTEEVENTS.csv`
     - `data/DIAGNOSES_ICD.csv`
 
-2. Do initial preprocessing by running `bash setup_scripts/setup.sh`. This will store following information in `setup_outputs/` folder.
+2. Do initial preprocessing 
+
+Command: `bash setup_scripts/setup.sh`. 
+
+Output: This will store following information in `setup_outputs/` folder.
 
     - `SUBJECT_ID, FIRST_NAME, LAST_NAME, GENDER` --- Stored in `SUBJECT_ID_to_NAME.csv`
     - `SUBJECT_ID, TEXT` --- Stored in `SUBJECT_ID_to_NOTES_original.csv`
@@ -37,6 +45,12 @@ We have two main setups -
 
 Command: `bash setup_scripts/name_insertion.sh`
 
+Output: This will store following info in `setup_folders/` folder.
+
+    - `SUBJECT_ID_to_NOTES_1a.csv`
+    - `SUBJECT_ID_to_NOTES_1b.csv`
+    - `reidentified_subject_ids.csv` -- This file contains list of all those patient subject ids that were reidentified in 1a. This is the common set we run experiments for irrespective of which model we are using (1a or 1b)
+
 BERT Training
 =============
 
@@ -45,19 +59,42 @@ DO
 * `wget https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip`
 * `mkdir -p OriginalBERT/; unzip uncased_L-12_H-768_A-12.zip -d OriginalBERT/`
 * `rm uncased_L-12_H-768_A-12.zip`
-1. Script that takes in a file of form `SUBJECT_ID_to_NOTES_{type}.csv` and trains BERT. Store BERT model in `ClinicalBERT_{type}/`
+
+### Command: 
+
+```bash
+python training_scripts/train_BERT.py \
+--input-file setup_outputs/SUBJECT_ID_to_NOTES_{1a|1b}.csv \
+--output-dir model_outputs/ClinicalBERT_{1a|1b}/
+```
+
+### Output:
+
+Will store BERT model (HuggingFace format) in output_folder (both 128 and 512 length version) in `model_outputs/ClinicalBERT_{1a|1b}/model_{128|512}/`
 
 Embeddings Training
 =============
 
-1. Script that takes in a file of form `SUBJECT_ID_to_NOTES_{type}.csv` and trains Word Embeddings. Store model in `Embedding_{type}/`
+### Command: 
+
+```bash
+python training_scripts/train_word_embeddings.py \
+--input-file setup_outputs/SUBJECT_ID_to_NOTES_{1a|1b}.csv \
+--output-dir model_outputs/WordEmbeddings_{1a|1b}/ \
+--embedding-type {cbow|skipgram}
+```
+
+### Output:
+
+Will store gensim Word2Vec model in `model_outputs/WordEmbeddings_{1a|1b}/{cbow|skipgram}.vectors`
 
 Experiments
 ============
 
 $path_to_model = `ClinicalBERT_{1a|1b}/model_512/` For BERT
 
-$path_to_model = `Embedding_{1a|1b}/{cbow|skipgram}.vectors` For Word Embeddings
+$path_to_model = `WordEmbedding_{1a|1b}/{cbow|skipgram}.vectors` For Word Embeddings
+
 
 ## MLM Experiments
 

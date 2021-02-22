@@ -142,6 +142,7 @@ def evaluate(model: BertForMaskedLM, tokenizer: BertTokenizer, condition_type: s
         logits = {length: logit for length, logit in zip(condition_wordpiece_lengths, logits)}
 
         ## Get Start index for (masked) condition in each template 
+        ## Not sure we need to do this for all templates? -> Once we have the index of the mask of one, it should be the same for all?
         start_indices = [tokenizer.tokenize(template).index("[MASK]") for template in templates]
         start_indices = {
             length: start_index for length, start_index in zip(condition_wordpiece_lengths, start_indices)

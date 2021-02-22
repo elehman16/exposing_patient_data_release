@@ -3,14 +3,12 @@ from typing import Dict, List, Set
 
 import numpy as np
 from experiments.metrics import precision_at_k
-from experiments.probing.common import generate_name_condition_template, get_cls_embeddings
-from experiments.utilities import (
-    PatientInfo,
-    filter_condition_code_by_count,
-    get_condition_code_to_count,
-    get_condition_code_to_descriptions,
-    get_subject_id_to_patient_info,
-)
+from experiments.probing.common import (generate_name_condition_template,
+                                        get_cls_embeddings)
+from experiments.utilities import (PatientInfo, filter_condition_code_by_count,
+                                   get_condition_code_to_count,
+                                   get_condition_code_to_descriptions,
+                                   get_subject_id_to_patient_info)
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
@@ -18,15 +16,13 @@ from sklearn.utils import resample
 from tqdm import tqdm
 from transformers import BertModel, BertTokenizer
 
-import seaborn as sns
-
 
 def get_frequency_bins(condition_code_to_count: Dict[str, int], condition_type: str) -> List[List[str]]:
     """Find which conditions belong in what bins.
-    @param freq is a dictionary of conditions to # of occurances
-    @param stanza is if we are using Stanza extracted conditions.
+    @param condition_code_to_count is a dictionary of conditions to # of occurances
+    @param condition_type is in [icd9, stanza]
     @return a 2D array, where each inner array represents a different frequency
-    bin. Each inner array contains str versions of conditions.
+    bin. Each inner array contains condition codes belonging to that bin.
     """
     nbins = 5
     if condition_type == "stanza":
@@ -61,12 +57,7 @@ def train_and_evaluate(
     model: BertModel, tokenizer: BertTokenizer, condition_type: str, sampling_bin: int, n: int = 50
 ):
     """Train and evaluate the model on N conditions.
-    @param model is the model to encode CLS tokens with.
-    @param tokenizer is a BERT tokenizer.
-    @param stanza are we using the Stanza extracted conditions?
-    @param b is which frequency to sample from.
     @param n is the number of conditions to sample the bin from.
-    @return all AUCs and precision @ K scores.
     """
     ### Get Relevant Data
 

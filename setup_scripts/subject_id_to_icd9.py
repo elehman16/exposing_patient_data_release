@@ -42,7 +42,7 @@ def run(input_file: str, output_file: str, output_descriptions_file: str):
 if __name__ == "__main__":
     """
     Usage:
-        - python subject_id_to_name.py \
+        - python subject_id_to_icd9.py \
             --input-file DIAGNOSES_ICD.csv \
             --output-file SUBJECT_ID_to_ICD9.csv \
             --output-descriptions-file ICD9_Descriptions.csv
