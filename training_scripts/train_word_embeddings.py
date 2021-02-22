@@ -6,12 +6,8 @@ import time
 import gensim
 import pandas as pd
 import spacy
-from tqdm import tqdm
 
-tqdm.pandas()
-
-nlp = spacy.load("en_core_sci_sm")
-tokenizer = nlp.Defaults.create_tokenizer(nlp)
+nlp = spacy.load("en_core_web_sm", disable=["tagger", "parser", "ner"])
 
 
 # global parameters
@@ -31,6 +27,20 @@ class callback(gensim.models.callbacks.CallbackAny2Vec):
         print(time.strftime("%H:%M:%S", time.gmtime()))
 
 
+from joblib import Parallel, delayed
+
+def tokenizer(chunk) :
+    return [" ".join([token.text.lower() for token in sentence]) for sentence in nlp.pipe(chunk)]
+
+def preprocess_parallel(texts, chunksize=100):
+    chunker = (texts[i:i + chunksize] for i in range(0, len(texts), chunksize))
+    executor = Parallel(n_jobs=16, backend='multiprocessing', prefer="processes", verbose=20)
+    do = delayed(tokenizer)
+    tasks = (do(chunk) for chunk in chunker)
+    result = executor(tasks)
+    return [text for chunk in result for text in chunk]
+
+
 def train_word_embeddings(args: argparse.Namespace):
     """Train a word embedding model based on the given information.
     @param use_skipgram is whether we train a skipgram model or a cbow model.
@@ -43,13 +53,14 @@ def train_word_embeddings(args: argparse.Namespace):
     notes = pd.read_csv(args.input_file).TEXT
 
     print("Loaded Text")
-    sentences = notes.progress_apply(
-        lambda note: [[token.text.lower() for token in tokenizer(sentence)] for sentence in note.split("\n")]
-    )
+    sentences = [sentence for note in notes for sentence in note.split("\n")]
 
+    print(f"Num Sentences : {len(sentences)}")
+
+    tokenized_sentences = preprocess_parallel(sentences, chunksize=100000)
+    print(f"Num Sentence : {len(tokenized_sentences)}")
+    sentences = [sent.split() for sent in tokenized_sentences]
     print("Tokenized")
-
-    sentences = [sent for note in sentences for sent in note]
 
     logging.basicConfig(format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO)
     model = gensim.models.Word2Vec(
