@@ -3,8 +3,8 @@ import argparse
 from typing import Dict, List
 
 import numpy as np
-from experiments.masked_prediction.common import (
-    get_condition_predicted_logit, get_condition_predicted_rank, get_logits_from_templates)
+from experiments.MLM.common import (
+    get_scoring_function, get_logits_from_templates)
 from experiments.metrics import precision_at_k
 from experiments.utilities import (filter_condition_code_by_count,
                                    get_condition_code_to_count,
@@ -108,21 +108,16 @@ def evaluate(model, cmp_model, tokenizer, condition_type, metric):
 
         masked_logits = {length: masked_logits[i] for i, length in enumerate(name_wordpiece_lengths)}
 
-        if metric == "probability" :
-            metric_calculator = get_condition_predicted_logit
-        elif metric == "rank" :
-            metric_calculator = get_condition_predicted_rank
-        else :
-            raise NotImplementedError(f"{metric} metric not implemented")
+        scoring_function = get_scoring_function(metric)
 
         for subject_id, name_wp in subject_id_to_name_wordpiece_ids.items():
             name_length = len(name_wp)
             start = start_index[name_length]
 
-            named_prediction = metric_calculator(named_logits[name_length], name_wp, start)
-            masked_prediction = metric_calculator(masked_logits[name_length], name_wp, start)
+            named_score = scoring_function(named_logits[name_length], name_wp, start)
+            masked_score = scoring_function(masked_logits[name_length], name_wp, start)
 
-            preds[subject_id].append(named_prediction - masked_prediction)
+            preds[subject_id].append(named_score - masked_score)
 
     for subject_id, patient_info in tqdm(subject_id_to_patient_info.items()):
         condition_labels = get_condition_labels_as_vector(patient_info.CONDITIONS, condition_code_to_index)
