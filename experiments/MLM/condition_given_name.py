@@ -2,7 +2,7 @@ import argparse
 from typing import Dict, List
 
 import numpy as np
-from experiments.masked_prediction.common import (
+from experiments.MLM.common import (
     get_average_predicted_score,
     get_logits_from_templates,
 )
@@ -101,6 +101,7 @@ def evaluate(model: BertForMaskedLM, tokenizer: BertTokenizer, condition_type: s
     logits = get_logits_from_templates(model, tokenizer, condition_only_templates)
     logits = {length: logit for length, logit in zip(condition_wordpiece_lengths, logits)}
 
+    # Isn't the start index always 1 here? Yes. This is to keep code consistent.
     start_indices = [tokenizer.tokenize(template).index("[MASK]") for template in condition_only_templates]
     start_indices = {
         length: start_index for length, start_index in zip(condition_wordpiece_lengths, start_indices)

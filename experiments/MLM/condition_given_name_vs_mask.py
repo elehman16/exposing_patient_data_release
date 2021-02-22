@@ -3,7 +3,7 @@ import argparse
 from typing import Dict, List
 
 import numpy as np
-from experiments.masked_prediction.common import (
+from experiments.MLM.common import (
     get_scoring_function,
     get_logits_from_templates,
 )

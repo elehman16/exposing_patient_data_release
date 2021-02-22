@@ -2,7 +2,7 @@ import argparse
 from typing import List
 
 import numpy as np
-from experiments.masked_prediction.common import (get_logits_from_templates,
+from experiments.MLM.common import (get_logits_from_templates,
                                                   get_scoring_function)
 from experiments.utilities import get_patient_name_to_is_reidentified
 from tqdm import tqdm
