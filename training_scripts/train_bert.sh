@@ -47,7 +47,8 @@ python ./bert/run_pretraining.py \
   --num_warmup_steps=10 \
   --learning_rate=2e-5
 
-cp ${BERT_UNCASED}/bert_config.json ${MODEL_OUTPUT_FOLDER}/model_128/
+cp ${BERT_UNCASED}/bert_config.json ${MODEL_OUTPUT_FOLDER}/model_128/bert_config.json
+cp ${BERT_UNCASED}/bert_config.json ${MODEL_OUTPUT_FOLDER}/model_128/config.json
 
 # Re-name files from model 128 sequence length
 cp ${MODEL_OUTPUT_FOLDER}/model_128/model.ckpt-${NUM_STEPS}.index ${MODEL_OUTPUT_FOLDER}/model_128/model.ckpt.index
@@ -69,9 +70,10 @@ python ./bert/run_pretraining.py \
   --max_predictions_per_seq=76 \
   --num_train_steps=${NUM_STEPS} \
   --num_warmup_steps=5000 \
-  --learning_rate=5e-5
+  --learning_rate=5e-5;
 
-cp ${BERT_UNCASED}/bert_config.json ${MODEL_OUTPUT_FOLDER}/model_512/
+cp ${BERT_UNCASED}/bert_config.json ${MODEL_OUTPUT_FOLDER}/model_512/bert_config.json
+cp ${BERT_UNCASED}/bert_config.json ${MODEL_OUTPUT_FOLDER}/model_512/config.json
 
 cp ${MODEL_OUTPUT_FOLDER}/model_512/model.ckpt-${NUM_STEPS}.index ${MODEL_OUTPUT_FOLDER}/model_512/model.ckpt.index
 cp ${MODEL_OUTPUT_FOLDER}/model_512/model.ckpt-${NUM_STEPS}.meta  ${MODEL_OUTPUT_FOLDER}/model_512/model.ckpt.meta
