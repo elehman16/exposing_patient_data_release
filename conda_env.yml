@@ -2,6 +2,7 @@ name: exposing
 dependencies:
   - python=3.8
   - pytorch::pytorch=1.7.1
+  - pytorch::cudatoolkit=10.2
   - pip
   - conda-forge::spacy=2.3.2
   - pandas

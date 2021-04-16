@@ -1,0 +1,8 @@
+name: medcat
+dependencies:
+  - python=3.8
+  - pip
+  - pandas
+  - numpy
+  - pip:
+    - medcat
