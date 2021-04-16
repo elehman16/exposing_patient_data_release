@@ -1,4 +1,15 @@
-# exposing_patient_data_clean
+# Release Version of Does BERT leak Patient Data ?
+
+Some things to keep in mind
+---------------------------
+
+* We use the term `reidentified` in many places in the code. This is used to denote if the patient name or their subject id had atleast one occurence in the MIMIC pseudo-reidentified corpus that Clinical BERT was trained. Many experiments are either run only on reidentified patients only (for example, measuring P(condition | patient name)), in other places, we use a method to distinguish whether a patient name appeared in the corpus or not (for example, names_probing.py)
+
+* Below whenever you see something like {...|...|...}, etc, this means you have a choice and can choose one.
+
+* Make sure to **`export PYTHONPATH=.`** before running any command. Run any command from the directory containing this README.
+
+* SciSpacy link is as follows: https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.2.5/en_core_sci_sm-0.2.5.tar.gz
 
 Setup
 =====
@@ -9,7 +20,11 @@ Setup
     - `data/NOTEEVENTS.csv`
     - `data/DIAGNOSES_ICD.csv`
 
-2. Do initial preprocessing by running `bash setup_scripts/setup.sh`. This will store following information in `setup_outputs/` folder.
+2. Do initial preprocessing 
+
+Command: `bash setup_scripts/setup.sh`. 
+
+Output: This will store following information in `setup_outputs/` folder.
 
     - `SUBJECT_ID, FIRST_NAME, LAST_NAME, GENDER` --- Stored in `SUBJECT_ID_to_NAME.csv`
     - `SUBJECT_ID, TEXT` --- Stored in `SUBJECT_ID_to_NOTES_original.csv`
@@ -32,6 +47,12 @@ We have two main setups -
 
 Command: `bash setup_scripts/name_insertion.sh`
 
+Output: This will store following info in `setup_folders/` folder.
+
+    - `SUBJECT_ID_to_NOTES_1a.csv`
+    - `SUBJECT_ID_to_NOTES_1b.csv`
+    - `reidentified_subject_ids.csv` -- This file contains list of all those patient subject ids that were reidentified in 1a. This is the common set we run experiments for irrespective of which model we are using (1a or 1b)
+
 BERT Training
 =============
 
@@ -40,39 +61,107 @@ DO
 * `wget https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip`
 * `mkdir -p OriginalBERT/; unzip uncased_L-12_H-768_A-12.zip -d OriginalBERT/`
 * `rm uncased_L-12_H-768_A-12.zip`
-1. Script that takes in a file of form `SUBJECT_ID_to_NOTES_{type}.csv` and trains BERT. Store BERT model in `ClinicalBERT_{type}/`
+
+### Command: 
+
+```bash
+python training_scripts/train_BERT.py \
+--input-file setup_outputs/SUBJECT_ID_to_NOTES_{1a|1b}.csv \
+--output-dir model_outputs/ClinicalBERT_{1a|1b}/
+```
+
+### Output:
+
+Will store BERT model (HuggingFace format) in output_folder (both 128 and 512 length version) in `model_outputs/ClinicalBERT_{1a|1b}/model_{128|512}/`
 
 Embeddings Training
 =============
 
-1. Script that takes in a file of form `SUBJECT_ID_to_NOTES_{type}.csv` and trains Word Embeddings. Store model in `Embedding_{type}/`
+### Command: 
+
+```bash
+python training_scripts/train_word_embeddings.py \
+--input-file setup_outputs/SUBJECT_ID_to_NOTES_{1a|1b}.csv \
+--output-dir model_outputs/WordEmbeddings_{1a|1b}/ \
+--embedding-type {cbow|skipgram}
+```
+
+### Output:
+
+Will store gensim Word2Vec model in `model_outputs/WordEmbeddings_{1a|1b}/{cbow|skipgram}.vectors`
 
 Experiments
 ============
 
-1. Takes in `SUBJECT_ID_to_*.csv` files as needed and `ClinicalBERT_*\` directories as needed and run whatever experiments we want to perform.
+$path_to_model = `ClinicalBERT_{1a|1b}/model_512/` For BERT
 
-Running Specific Experiments
-=============================
-First, configure the config.py file to have the correct file paths. Next, we will describe how to get the results from the paper.
-1. To get the results for **Table 1**,  **Table 2**, and **Figure 1**, see the file `experiments/masked_prediction/missing_word_predictions.py`.
-We also have these experiments that are available to run in `scripts/run_masked_prediction.sh`.
-2. To get the results for **Table 3**, see the file `experiments/probing/linear_layer_missing_predictions.py`.
-We also have these experiments that are available to run in `scripts/run_probing.sh`.
-3. To get the results for **Figure 2**, see the file `experiments/probing/single_condition_probing.py` or `torch_single_condition_probing.py`.
-Both of the files are equivalent, but one allows for easy finetuning of BERT.
-We also have these experiments that are available to run in `scripts/run_probing.sh`
-4. To get the results from **Table 4**, see the file `experiments/probing/names_probing.py`.
-We also have these experiments that are available to run in `scripts/run_probing.sh`
-5. To get the results from **Figure 3**, see the files `experiments/cosine_similarity/bert_cosine_sim.py`
-and `experiments/cosine_similarity/word_embedding_cosine_sim.py`. We also have these
-experiments ready to run in `scripts/run_cosine_sim.sh`.
-6. To get the results for **Figure 4**, see the file `experiments/masked_prediction/diff_in_masked_pr_names.py`.
-We also have these experiments ready to run in `scripts/run_diff_in_pr_name.sh`.
-7. To get the results for **Table 5**, see the file `experiments/masked_prediction/diff_in_masked_pred.py`.
-We have these experiments ready to run in `scripts/run_diff_in_masked_pred.sh`.
+$path_to_model = `WordEmbedding_{1a|1b}/{cbow|skipgram}.vectors` For Word Embeddings
 
-TODO
-=====
-1. Fix other probing to use Torch.
-2. Use updated HuggingFace for everything.
+
+## MLM Experiments
+
+### 1. Using MLM, Compute and measure P(condition | name) or P(condition)
+
+```bash
+python experiments/MLM/condition_given_name.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9
+```
+
+### 2. Using MLM, Compute and measure P(condition | name) - P(condition | name masked)
+
+```bash
+python experiments/MLM/condition_given_name_vs_mask.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
+```
+
+### 3. Using MLM, Compute and measure P(name | condition) - P(name | condition masked)
+
+```bash
+python experiments/MLM/name_given_condition_vs_mask.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
+```
+
+### 4. Using MLM, Compute and measure P(last name | first name) for reidentified vs unreidentified patients
+
+```bash
+python experiments/MLM/first_name_given_last_name.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank} --mode {mask_first|mask_last}
+```
+
+## Probing Experiments
+
+### 1. Using Probing, Compute and Probe for Score(name, condition). Use common LR/MLP model for all conditions.
+
+```bash
+python experiments/probing/all_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --template-mode {name_and_condition | condition_only} --prober {LR|MLP}
+```
+
+### 2. Divide conditions in bins, select 50 conditions in each bin randomly and train individual probers for each condition.
+
+* LR Version
+
+```bash
+python experiments/probing/LR_single_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --frequency-bin {0|1|2|3}
+```
+
+* BERT Fine tuned version
+
+```bash
+python experiments/probing/FullBERT_single_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --frequency-bin {0|1|2|3}
+```
+
+### 3. Probe for names. Run a probe to distinguish reidentified vs non-reidentified patient names.
+
+```bash
+python experiments/probing/names_probing.py --model $path_to_model --tokenizer bert-base-uncased
+```
+
+## Cosine Similarity Experiments
+
+### 1. Compute and measure cosine similarity between name and condition wordpiece embeddings from BERT
+
+```bash
+python experiments/cosine_similarity/bert_cosine_sim.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9
+```
+
+### 2. Compute and measure cosine similarity between name and condition token embeddings under Word Embedding Models (cbow or SG)
+
+```bash
+python experiments/cosine_similarity/word_embedding_cosine_sim.py --model-file $path_to_model --condition-type icd9
+```
