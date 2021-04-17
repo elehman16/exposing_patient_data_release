@@ -22,7 +22,7 @@ Setup
 
 2. Do initial preprocessing 
 
-Command: `bash setup_scripts/setup.sh`. 
+> Command: `PYTHONPATH=. bash setup_scripts/setup.sh`. 
 
 Output: This will store following information in `setup_outputs/` folder.
 
@@ -32,8 +32,8 @@ Output: This will store following information in `setup_outputs/` folder.
     - `SUBJECT_ID, CODE` --- Stored in `SUBJECT_ID_to_ICD9.csv`
     - `CODE,DESCRIPTION` --- Stored in `ICD9_Descriptions.csv`
 
-    - `SUBJECT_ID, CODE` --- Stored in `SUBJECT_ID_to_Stanza.csv`
-    - `CODE,DESCRIPTION` --- Stored in `Stanza_Descriptions.csv` 
+    - `SUBJECT_ID, CODE` --- Stored in `SUBJECT_ID_to_MedCAT.csv`
+    - `CODE,DESCRIPTION` --- Stored in `MedCAT_Descriptions.csv` 
 
 
 Pseudo-Re-Identification of Names in Notes
@@ -42,16 +42,19 @@ Pseudo-Re-Identification of Names in Notes
 In this part, we replace known regexes in the patient notes with the actual names we sampled above.
 We have two main setups - 
 
-1.a Replace relevant regexes with Names
-1.b Replace relevant regexes with Names and Add the Name to beginning of each sentence
+1.a Replace relevant regexes with Names\
+1.b Replace relevant regexes with Names and Add the Name to beginning of each sentence\
+1.c Templates Only version <tt>[CLS] [Patient name] is a yo patient with [Condition] [SEP]</tt>
 
-Command: `bash setup_scripts/name_insertion.sh`
+> Command: `PYTHONPATH=. bash setup_scripts/name_insertion.sh`
 
 Output: This will store following info in `setup_folders/` folder.
 
     - `SUBJECT_ID_to_NOTES_1a.csv`
     - `SUBJECT_ID_to_NOTES_1b.csv`
+    - `SUBJECT_ID_to_NOTES_templates.csv`
     - `reidentified_subject_ids.csv` -- This file contains list of all those patient subject ids that were reidentified in 1a. This is the common set we run experiments for irrespective of which model we are using (1a or 1b)
+
 
 BERT Training
 =============
@@ -60,19 +63,19 @@ DO
 * `git clone https://github.com/google-research/bert.git`
 * `wget https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip`
 * `mkdir -p OriginalBERT/; unzip uncased_L-12_H-768_A-12.zip -d OriginalBERT/`
-* `rm uncased_L-12_H-768_A-12.zip`
+* `rm uncased_L-12_H-768_A-12.zip```
 
 ### Command: 
 
 ```bash
 python training_scripts/train_BERT.py \
---input-file setup_outputs/SUBJECT_ID_to_NOTES_{1a|1b}.csv \
---output-dir model_outputs/ClinicalBERT_{1a|1b}/
+--input-file setup_outputs/SUBJECT_ID_to_NOTES_{1a|1b|templates}.csv \
+--output-dir model_outputs/ClinicalBERT_{1a|1b|templates}/
 ```
 
 ### Output:
 
-Will store BERT model (HuggingFace format) in output_folder (both 128 and 512 length version) in `model_outputs/ClinicalBERT_{1a|1b}/model_{128|512}/`
+Will store BERT model (HuggingFace format) in output_folder (both 128 and 512 length version) in `model_outputs/ClinicalBERT_{1a|1b|templates}/model_{128|512}/`
 
 Embeddings Training
 =============

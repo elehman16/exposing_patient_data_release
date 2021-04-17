@@ -57,7 +57,8 @@ def run_probe(
     all_subject_ids = sorted(list(subject_id_to_patient_info.keys()))
 
     ## Sample 10K subjects because 27K takes timeeeeeee 
-    all_subject_ids = sorted(resample(all_subject_ids, replace=False, n_samples=10000, random_state=2021))
+    n_samples = min(len(all_subject_ids), 10000)
+    all_subject_ids = sorted(resample(all_subject_ids, replace=False, n_samples=n_samples, random_state=2021))
 
     train_subject_ids, test_subject_ids = train_test_split(
         all_subject_ids, random_state=2021, test_size=0.5, shuffle=True
