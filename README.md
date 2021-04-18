@@ -1,5 +1,7 @@
 # Release Version of Does BERT leak Patient Data ?
 
+## **NOTE: This repo is work in progress.**
+
 Some things to keep in mind
 ---------------------------
 
@@ -14,9 +16,9 @@ Some things to keep in mind
 Installation 
 ============
 
-> conda env create -f conda_env.yml\
-> python -m spacy download en\
-> pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.2.5/en_core_sci_sm-0.2.5.tar.gz
+> bash: conda env create -f conda_env.yml\
+> bash: python -m spacy download en\
+> bash: pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.2.5/en_core_sci_sm-0.2.5.tar.gz
 
 Setup
 =====
@@ -29,7 +31,7 @@ Setup
 
 2. Do initial preprocessing 
 
-> Command: `PYTHONPATH=. bash setup_scripts/setup.sh`. 
+> bash: PYTHONPATH=. bash setup_scripts/setup.sh
 
 Output: This will store following information in `setup_outputs/` folder.
 
