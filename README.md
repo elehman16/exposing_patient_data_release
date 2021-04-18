@@ -11,6 +11,13 @@ Some things to keep in mind
 
 * SciSpacy link is as follows: https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.2.5/en_core_sci_sm-0.2.5.tar.gz
 
+Installation 
+============
+
+> conda env create -f conda_env.yml\
+> python -m spacy download en\
+> pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.2.5/en_core_sci_sm-0.2.5.tar.gz
+
 Setup
 =====
 
