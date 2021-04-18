@@ -6,23 +6,26 @@ from typing import Dict, List, Set
 
 import os
 
-def is_debugging_mode() -> bool :
+
+def is_debugging_mode() -> bool:
     if "debug_exposing" in os.environ and os.environ["debug_exposing"] == "1":
         print("IN DEBUG MODE")
-        return True 
+        return True
 
     return False
+
 
 def get_reidentified_subject_ids_set() -> Set[str]:
     """Return the set of subject ids for patients that had their names occur in notes"""
     subject_ids = pd.read_csv(config.MODIFIED_SUBJECT_IDS).SUBJECT_ID.values
-    if is_debugging_mode() :
+    if is_debugging_mode():
         subject_ids = subject_ids[:1000]
 
     return set(subject_ids)
 
 
 PatientInfo = namedtuple("PatientInfo", field_names=["FIRST_NAME", "LAST_NAME", "GENDER", "CONDITIONS"])
+
 
 def get_subject_id_to_patient_info(condition_type: str) -> Dict[str, PatientInfo]:
     """Return a Dict mapping [reidentified] subject id to Patient Info associated with it.
