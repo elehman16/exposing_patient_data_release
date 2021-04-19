@@ -4,7 +4,7 @@ import config
 import spacy
 import pandas as pd
 from tqdm import tqdm
-
+from argparse import ArgumentParser
 from joblib import Parallel, delayed
 
 from setup_scripts.subject_id_to_medcat_preprocess import get_entities
@@ -13,6 +13,9 @@ from experiments.utilities import get_subject_id_to_patient_info
 nlp = spacy.load("en")
 
 def has_name(sentences, names):
+    """ Find the subset of sentences that contain the given names.
+    @param sentences is a list of texts. 
+    @param names is a set of strings containing names we are looking for. """
     sentences_with_name = []
     for text in sentences :
         text = text.replace("[CLS]", "").replace("[SEP]", "").strip()
@@ -27,6 +30,7 @@ def has_name(sentences, names):
         
     
 def preprocess_parallel(function, texts, chunksize=100, **kwargs):
+    """ Parse through the text in parallel using the given @param function. """
     chunker = (texts[i : i + chunksize] for i in range(0, len(texts), chunksize))
     executor = Parallel(n_jobs=28, backend="multiprocessing", prefer="processes", verbose=20)
     do = delayed(function)
@@ -34,15 +38,10 @@ def preprocess_parallel(function, texts, chunksize=100, **kwargs):
     result = executor(tasks)
     return [text for chunk in result for text in chunk]
 
-
-from argparse import ArgumentParser
-
-parser = ArgumentParser()
-parser.add_argument("--sample-files")
-parser.add_argument("--metrics-output-path")
-
-
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--sample-files",  help="Location of the data to read is.", type=str)
+    parser.add_argument("--metrics-output-path",  help="Where to print results to.", type=str)
     args = parser.parse_args()
 
     metrics_output_path = args.metrics_output_path

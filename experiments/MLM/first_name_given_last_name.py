@@ -111,11 +111,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", help="Location of the model", type=str, required=True)
     parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str, required=True)
-    parser.add_argument("--mode", type=str, choices=["mask_first", "mask_last"], required=True)
+    parser.add_argument("--mode", type=str, help="Mask first or last name?", choices=["mask_first", "mask_last"], required=True)
     parser.add_argument(
         "--metric", help="Which metric to calculate ?", choices=["rank", "probability"], required=True
     )
-    parser.add_argument("--metrics-output-path", type=str)
+    parser.add_argument("--metrics-output-path", help="Location of where to store outputs", type=str)
     args = parser.parse_args()
 
     tokenizer = BertTokenizer.from_pretrained(args.tokenizer)

@@ -230,15 +230,13 @@ if __name__ == "__main__":
     parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str)
     parser.add_argument("--conditions", help="Number of conditions to test per bin", type=int, default=50)
     parser.add_argument("--frequency-bin", help="Which frequency bin to use.", type=int)
-    parser.add_argument("--metrics-output-path", type=str)
+    parser.add_argument("--metrics-output-path", help="Where to print results to.", type=str)
     args = parser.parse_args()
 
     # Load pre-trained model tokenizer (vocabulary)
-    # '/home/eric/dis_rep/nyu_clincalBERT/clinicalBERT/notebook/bert_uncased/')
     tokenizer = BertTokenizer.from_pretrained(args.tokenizer)
 
     # Load pre-trained model (weights)
-    # '/home/eric/dis_rep/nyu_clincalBERT/convert_to_pytorch/all_useful_100k/'
     model = BertForSequenceClassification.from_pretrained(args.model).cuda().eval()
 
     import os

@@ -175,8 +175,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", help="Location of the model", type=str, required=True)
     parser.add_argument("--tokenizer", help="Location of the tokenizer", type=str, required=True)
-    parser.add_argument("--condition-type", type=str, choices=["icd9", "medcat"], required=True)
-    parser.add_argument("--metrics-output-path", type=str)
+    parser.add_argument("--condition-type", help="Should we use icd9 or medcat labels?", type=str, choices=["icd9", "medcat"], required=True)
+    parser.add_argument("--metrics-output-path", help="Where to print results.", type=str)
 
     args = parser.parse_args()
     tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer)

@@ -6,6 +6,8 @@ from tqdm import tqdm
 
 
 def get_cls_embeddings(model, tokenizer, templates: List[str], disable_tqdm: bool = False) -> np.ndarray:
+    """ Get CLS tokens from last layer of BERT. We do next sentence prediction during fine-tuning 
+    so these should have some reasonable signal w/o finetuning. """
     embeddings = []
     batch_size = 2000
     for b in tqdm(range(0, len(templates), batch_size), disable=disable_tqdm):

@@ -29,6 +29,7 @@ from scipy.special import logsumexp
 def normalize_logits(
     condition_logits: np.ndarray, condition_baseline_freq, condition_wordpiece_lengths, set_to_use_lengths
 ):
+    """ Normalize prediction logits by the length of the predicted sequence. """
     condition_logits = condition_logits - logsumexp(condition_logits)
     corrected_logits = np.zeros_like(condition_logits)
 
@@ -326,8 +327,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--template-idx", help="Which template to select", choices=[0, 1, 2, 3], type=int, required=True
     )
-    parser.add_argument("--max-count", type=int, default=500000)
-    parser.add_argument("--metrics-output-path", type=str)
+    parser.add_argument("--max-count", type=int, help="Filter any conditions that more than @param patients have", default=500000)
+    parser.add_argument("--metrics-output-path", help="Where to print/save results to.", type=str)
 
     args = parser.parse_args()
     tokenizer = BertTokenizer.from_pretrained(args.tokenizer)

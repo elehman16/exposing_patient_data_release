@@ -1,3 +1,4 @@
+import os
 import argparse
 from typing import Dict
 
@@ -22,6 +23,7 @@ tokenizer = nlp.Defaults.create_tokenizer(nlp)
 
 
 def get_embedding(model: gensim.models.KeyedVectors, text: str):
+    """ Get the embedding of the text from the model. """
     mean_vector = model.vectors.mean(0)[None, :]  ## Hackery since using full model not trained yet
     vectors = [model[token.text.lower()][None, :] for token in tokenizer(text) if token.text.lower() in model]
     if len(vectors) > 0:
@@ -103,16 +105,13 @@ def main(model: gensim.models.KeyedVectors, condition_type: str, metrics_output_
         f.write(mean_std_as_string("All Pair Sim", all_pair_differential_sim))
 
 
-from training_scripts.train_word_embeddings import callback as callback
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-file", help="Location of the model.", type=str)
-    parser.add_argument("--condition-type", type=str, choices=["icd9", "medcat"], required=True)
-    parser.add_argument("--metrics-output-path", type=str)
+    parser.add_argument("--condition-type", help="Should we use medcat or icd9 labels.", type=str, choices=["icd9", "medcat"], required=True)
+    parser.add_argument("--metrics-output-path", help="Where should we print results?", type=str)
 
     args = parser.parse_args()
-    import os
     metrics_output_path = args.metrics_output_path if args.metrics_output_path is not None else args.model_file.split('.')[0]
     metrics_output_path = os.path.join(metrics_output_path, f"wb_cosine_sim/{args.condition_type}")
     os.makedirs(metrics_output_path, exist_ok=True)

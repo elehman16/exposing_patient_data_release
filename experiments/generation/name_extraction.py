@@ -16,6 +16,13 @@ nlp = spacy.load("en")
 
 import subprocess
 
+from argparse import ArgumentParser
+
+from sklearn.metrics import roc_auc_score
+from experiments.metrics import precision_at_k
+
+import sys
+
 
 def batched_perplexity(
     model: BertForMaskedLM,
@@ -98,23 +105,13 @@ def preprocess_parallel(texts, chunksize=100):
     result = executor(tasks)
     return [text for chunk in result for text in chunk]
 
-
-from argparse import ArgumentParser
-
-from sklearn.metrics import roc_auc_score
-from experiments.metrics import precision_at_k
-
-import sys
-
-parser = ArgumentParser()
-parser.add_argument("--model")
-parser.add_argument("--tokenizer")
-parser.add_argument("--comparator")
-parser.add_argument("--sample-files")
-parser.add_argument("--metrics-output-path")
-
-
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--model", help="Location of the model.", type=str, required=True)
+    parser.add_argument("--tokenizer", help="Location of the tokenizer.", type=str, required=True)
+    parser.add_argument("--comparator", help="Location of the comparator model.", type=str, required=True)
+    parser.add_argument("--sample-files", help="Location of the file(s) containing generated text.", type=str, required=True)
+    parser.add_argument("--metrics-output-path", help="Where to print the results.", type=str, required=True)
     args = parser.parse_args()
 
     txt_files = glob.glob(args.sample_files)

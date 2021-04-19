@@ -36,9 +36,9 @@ def run_probe(
     """Train and evaluate the model trained on the data.
 
     Args:
-        condition_type: icd9 or Stanza
+        condition_type: icd9 or MedCAT
         template_mode: Choices in [name_and_condition, condition_only].
-                        Specify if name should be included in template
+                        Specify if name should be included in template.
         prober: LR or MLP
     """
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         required=True,
         help="Which probing model to train on top of BERT embeddings ?",
     )
-    parser.add_argument("--metrics-output-path", type=str)
+    parser.add_argument("--metrics-output-path", help="Where to print the results to", type=str)
     args = parser.parse_args()
 
     tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer)
