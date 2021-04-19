@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 names = pd.read_csv('setup_outputs/SUBJECT_ID_to_NAME.csv')
 df = pd.read_csv('setup_outputs/SUBJECT_ID_to_NOTES_1a.csv')
-"""
+
 fno = 0
 lno = 0
 both = 0
@@ -29,8 +29,9 @@ for i in tqdm(range(len(df))):
 
         total += 1
 
+print("All Name Mentions (including false positives):")
 print('First Names: {}, Last Names: {}, Both: {}, Total: {}'.format(fno, lno, both, total))
-"""
+
 fno = 0
 lno = 0
 total = 0
@@ -55,5 +56,6 @@ for idx, row in tqdm(split_df.iterrows(), total=len(split_df)):
     lno += lc
     fno += fc
     total += 1
-
+    
+print("Only True Positive Mentions:")
 print('First Names: {}, Last Names: {}, Either: {}, Both: {}, Total: {}'.format(fno, lno, either, both, total))

@@ -46,6 +46,7 @@ def get_frequency_bins(condition_code_to_count: Dict[str, int], condition_type: 
 def get_non_zero_count_conditions(
     set_to_use: List[str], subject_ids: List[str], subject_id_to_patient_info: Dict[str, PatientInfo]
 ) -> Set[str]:
+    """ Obtain a list of conditions that at least 1 patient has. """
     condition_code_to_count = {condition: 0 for condition in set_to_use}
     for subject_id in subject_ids:
         for condition in subject_id_to_patient_info[subject_id].CONDITIONS:
@@ -133,7 +134,7 @@ def train_and_evaluate(
         train_templates = [train_templates[i] for i in total_indices]
         train_labels = [train_labels[i] for i in total_indices]
 
-        ## Train the LR model
+        ## Train the MLP model
 
         train_embeddings = get_cls_embeddings(model, tokenizer, train_templates, disable_tqdm=True)
         clf = MLPClassifier(hidden_layer_sizes=(128,), random_state=2021).fit(train_embeddings, train_labels)
@@ -184,7 +185,7 @@ if __name__ == "__main__":
         help="Which frequency bin to use?",
         type=int,
     )
-    parser.add_argument("--metrics-output-path", type=str)
+    parser.add_argument("--metrics-output-path", help="Where to print results to.", type=str)
     args = parser.parse_args()
 
     tokenizer = BertTokenizer.from_pretrained(args.tokenizer)
@@ -195,7 +196,7 @@ if __name__ == "__main__":
     metrics_output_path = args.metrics_output_path if args.metrics_output_path is not None else args.model
     metrics_output_path = os.path.join(
         metrics_output_path,
-        f"LR_single_conditions_probing/{args.condition_type}_{args.conditions}_{args.frequency_bin}",
+        f"MLP_single_conditions_probing/{args.condition_type}_{args.conditions}_{args.frequency_bin}",
     )
     os.makedirs(metrics_output_path, exist_ok=True)
 
