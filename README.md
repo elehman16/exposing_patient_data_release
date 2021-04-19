@@ -118,19 +118,7 @@ $path_to_model = `WordEmbedding_{1a|1b}/{cbow|skipgram}.vectors` For Word Embedd
 python experiments/MLM/condition_given_name.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9
 ```
 
-### 2. Using MLM, Compute and measure P(condition | name) - P(condition | name masked)
-
-```bash
-python experiments/MLM/condition_given_name_vs_mask.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
-```
-
-### 3. Using MLM, Compute and measure P(name | condition) - P(name | condition masked)
-
-```bash
-python experiments/MLM/name_given_condition_vs_mask.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank}
-```
-
-### 4. Using MLM, Compute and measure P(last name | first name) for reidentified vs unreidentified patients
+### 2. Using MLM, Compute and measure P(last name | first name) for reidentified vs unreidentified patients
 
 ```bash
 python experiments/MLM/first_name_given_last_name.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank} --mode {mask_first|mask_last}
