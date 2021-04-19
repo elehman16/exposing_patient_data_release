@@ -1,6 +1,6 @@
 # Release Version of Does BERT leak Patient Data ?
 
-## **NOTE: This repo is work in progress.**
+## **NOTE: This repo is work in progress. We are working with Physionet to make our trained clinicalBERTs publicy available for easy reproducibility and testing new extraction methods.**
 
 Some things to keep in mind
 ---------------------------
@@ -105,9 +105,9 @@ Will store gensim Word2Vec model in `model_outputs/WordEmbeddings_{1a|1b}/{cbow|
 Experiments
 ============
 
-$path_to_model = `ClinicalBERT_{1a|1b}/model_512/` For BERT
+$path_to_model = `model_outputs/ClinicalBERT_{1a|1b}/model_512/` For BERT
 
-$path_to_model = `WordEmbedding_{1a|1b}/{cbow|skipgram}.vectors` For Word Embeddings
+$path_to_model = `model_outputs/WordEmbedding_{1a|1b}/{cbow|skipgram}.vectors` For Word Embeddings
 
 
 ## MLM Experiments
@@ -115,13 +115,15 @@ $path_to_model = `WordEmbedding_{1a|1b}/{cbow|skipgram}.vectors` For Word Embedd
 ### 1. Using MLM, Compute and measure P(condition | name) or P(condition)
 
 ```bash
-python experiments/MLM/condition_given_name.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9
+python experiments/MLM/condition_given_name.py --model $path_to_model --tokenizer bert-base-uncased \
+--condition-type {icd9|medcat} --template-idx {0|1|2|3}
 ```
 
 ### 2. Using MLM, Compute and measure P(last name | first name) for reidentified vs unreidentified patients
 
 ```bash
-python experiments/MLM/first_name_given_last_name.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --metric {probability|rank} --mode {mask_first|mask_last}
+python experiments/MLM/first_name_given_last_name.py --model $path_to_model --tokenizer bert-base-uncased \
+--metric probability --mode {mask_first|mask_last}
 ```
 
 ## Probing Experiments
@@ -129,7 +131,8 @@ python experiments/MLM/first_name_given_last_name.py --model $path_to_model --to
 ### 1. Using Probing, Compute and Probe for Score(name, condition). Use common LR/MLP model for all conditions.
 
 ```bash
-python experiments/probing/all_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --template-mode {name_and_condition | condition_only} --prober {LR|MLP}
+python experiments/probing/all_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased \
+--condition-type {icd9|medcat} --template-mode {name_and_condition|condition_only} --prober {LR|MLP}
 ```
 
 ### 2. Divide conditions in bins, select 50 conditions in each bin randomly and train individual probers for each condition.
@@ -137,13 +140,15 @@ python experiments/probing/all_conditions_probing.py --model $path_to_model --to
 * LR Version
 
 ```bash
-python experiments/probing/LR_single_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --frequency-bin {0|1|2|3}
+python experiments/probing/LR_single_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased \
+--condition-type {icd9|medcat} --frequency-bin {0|1|2|3}
 ```
 
 * BERT Fine tuned version
 
 ```bash
-python experiments/probing/FullBERT_single_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9 --frequency-bin {0|1|2|3}
+python experiments/probing/FullBERT_single_conditions_probing.py --model $path_to_model --tokenizer bert-base-uncased \
+--condition-type {icd9|medcat} --frequency-bin {0|1|2|3}
 ```
 
 ### 3. Probe for names. Run a probe to distinguish reidentified vs non-reidentified patient names.
@@ -157,11 +162,25 @@ python experiments/probing/names_probing.py --model $path_to_model --tokenizer b
 ### 1. Compute and measure cosine similarity between name and condition wordpiece embeddings from BERT
 
 ```bash
-python experiments/cosine_similarity/bert_cosine_sim.py --model $path_to_model --tokenizer bert-base-uncased --condition-type icd9
+python experiments/cosine_similarity/bert_cosine_sim.py --model $path_to_model --tokenizer bert-base-uncased \
+--condition-type {icd9|medcat}
 ```
 
 ### 2. Compute and measure cosine similarity between name and condition token embeddings under Word Embedding Models (cbow or SG)
 
 ```bash
-python experiments/cosine_similarity/word_embedding_cosine_sim.py --model-file $path_to_model --condition-type icd9
+python experiments/cosine_similarity/word_embedding_cosine_sim.py --model-file $path_to_model \
+--condition-type {icd9|medcat}
 ```
+
+## Generation Experiments
+
+### 1. Generate Samples from BERT
+
+```bash
+MODEL_PATH=$path_to_model TOK_PATH=bert-base-uncased OUT_PATH=$path_to_model python experiments/generation/generate_text.py
+```
+
+Each run of above command generate 10000 samples in a file `$path_to_model/samples_{a random hex string}.txt` . We run this command in parallel 50 times to generate 500K samples. At the end, we can run `cat *.txt > samples.txt` in `$path_to_model` directory to combine all samples into single file.
+
+

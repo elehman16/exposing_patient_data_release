@@ -199,7 +199,7 @@ import secrets
 
 dirname = os.environ["OUT_PATH"]
 
-with open(f"{dirname}/test_{secrets.token_hex(16)}.txt", "a") as f:
+with open(f"{dirname}/samples_{secrets.token_hex(16)}.txt", "a") as f:
     for i in range(200):
         if random.random() < 0.3:
             seed_text = np.random.choice(seeds)
