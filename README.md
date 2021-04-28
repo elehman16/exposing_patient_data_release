@@ -44,6 +44,9 @@ Output: This will store following information in `setup_outputs/` folder.
     - `SUBJECT_ID, CODE` --- Stored in `SUBJECT_ID_to_MedCAT.csv`
     - `CODE,DESCRIPTION` --- Stored in `MedCAT_Descriptions.csv` 
 
+You can now dowload all the files above from this link ! https://physionet.org/content/clinical-bert-mimic-notes/1.0.0/ .
+Note, you can access this link if you can access MIMIC data on physionet. Please download the `setup_outputs` folder in root of your repo.
+
 
 Pseudo-Re-Identification of Names in Notes
 =========================================
@@ -85,6 +88,9 @@ python training_scripts/train_BERT.py \
 ### Output:
 
 Will store BERT model (HuggingFace format) in output_folder (both 128 and 512 length version) in `model_outputs/ClinicalBERT_{1a|1b|templates}/model_{128|512}/`
+
+You can now dowload all the BERT models we trained above from this link ! https://physionet.org/content/clinical-bert-mimic-notes/1.0.0/ .
+Note, you can access this link if you can access MIMIC data on physionet. Please download the `model_outputs/` folder in root of your repo.
 
 Embeddings Training
 =============
