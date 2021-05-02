@@ -337,7 +337,7 @@ if __name__ == "__main__":
 
     metrics_output_path = os.path.join(
         metrics_output_path,
-        f"condition_given_name/{args.condition_type}_{args.template_idx}_{args.max_count}",
+        f"condition_given_name/{args.condition_type}_{args.template_idx}",
     )
     os.makedirs(metrics_output_path, exist_ok=True)
 

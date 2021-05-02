@@ -1,6 +1,7 @@
 set -eu
 
-export MODEL_OUTPUT_FOLDER="gs://data_1a/model_outputs/${input_folder}"
+export MODEL_OUTPUT_FOLDER="gs://${bucket_name}/model_outputs/ClinicalBERT_${model_type}/model_512"
+export local_output_folder="model_outputs/ClinicalBERT_${model_type}"
 
 mkdir -p $local_output_folder
 

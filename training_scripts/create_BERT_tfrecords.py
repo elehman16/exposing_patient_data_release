@@ -14,8 +14,7 @@ def run(input_file, output_dir, distributed, n_jobs, job_num):
 
     print(f"Loaded {len(df)} records -- {df.index.min()}-{df.index.max()}")
 
-    data_folder = os.path.join(output_dir, "input_data")
-    tmp_file_for_sentences = f"{data_folder}/{os.path.basename(input_file)}.sentences"
+    tmp_file_for_sentences = f"{output_dir}/notes.sentences"
 
     if distributed :
         tmp_file_for_sentences = tmp_file_for_sentences + f".{job_num}-{n_jobs}"
@@ -49,8 +48,8 @@ if __name__ == "__main__":
     """
     Example Usage:
         python train_BERT.py \
-            --input-file SUBJECT_ID_to_NOTES_{}.csv \
-            --output-dir model_outputs/ClinicalBERT_{}/
+            --input-file setup_outputs/SUBJECT_ID_to_NOTES_{}.csv \
+            --output-dir model_inputs/{vocabulary-identifier}/{}
 
     """
 
